@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS User (
+  idUser       INT AUTO_INCREMENT PRIMARY KEY,
+  name         VARCHAR(55)  NOT NULL,
+  email        VARCHAR(255) NOT NULL UNIQUE,
+  password     VARCHAR(255) NOT NULL,
+  rol          VARCHAR(15)  NOT NULL DEFAULT 'user',
+  isActive     BOOLEAN      NOT NULL DEFAULT TRUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

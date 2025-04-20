@@ -1,4 +1,5 @@
 import express from 'express';
+
 import { corsMiddleware } from './middlewares/cors.js';
 import { securityMiddleware } from './middlewares/security.js';
 import { rateLimiter } from './middlewares/rateLimiter.js';
@@ -10,7 +11,11 @@ import config from '../config/config.js';
 import { openConnection, closeConnection } from '../config/databases/mysql.js';
 import { connectMongo, disconnectMongo } from '../config/databases/mongo.js';
 import logger, { notFoundHandler, errorHandler } from './utils/errorHandler.js';
+import { ensureMigrationsDir, runMigrations } from './utils/migrations.js';
 //! import routes from './routes/index.js';
+
+//! ─── Asegurar carpeta de migraciones ─────────────────────────────────────────────
+ensureMigrationsDir();
 
 const app = express();
 
@@ -25,22 +30,19 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 //? ─── API Routes ─────────────────────────────────────────────────────────────────
+app.get('/api', (req, res) => res.json({ message: 'Server is running...' }));
 //! app.use('/api', routes);
-app.get('/api', (req, res) => {
-    res.json({ message: 'Server is running...' });
-  });
 
 //? ─── 404 & Error Handlers ───────────────────────────────────────────────────────
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-//? ─── Database Services ──────────────────────────────────────────────────────────
+//! ─── Database Services ──────────────────────────────────────────────────────────
 const dbServices = [
   {
     name: 'MySQL',
     connect: async () => {
       const conn = await openConnection();
-      // Test simple ping
       await conn.ping();
       closeConnection(conn);
     }
@@ -52,7 +54,6 @@ const dbServices = [
   }
 ];
 
-//! Initialize all DB connections (non‑blocking startup)
 async function initDatabases() {
   for (const svc of dbServices) {
     try {
@@ -66,7 +67,18 @@ async function initDatabases() {
 
 //! ─── Server Startup ─────────────────────────────────────────────────────────────
 async function startServer() {
+  try {
+    //* 1) Ejecutar migraciones
+    await runMigrations();
+  } catch (err) {
+    logger.error(`Error ejecutando migraciones: ${err.stack || err}`);
+    process.exit(1);
+  }
+
+  //* 2) Conectar a las bases de datos
   await initDatabases();
+
+  //* 3) Levantar el servidor HTTP
   app.listen(config.app.port, () => {
     logger.info(`Servidor iniciado en puerto ${config.app.port}`);
   });
@@ -76,13 +88,13 @@ startServer();
 
 //! ─── Graceful Shutdown ──────────────────────────────────────────────────────────
 process.on('SIGINT', async () => {
-  logger.info('Cerrando conexiones...');
+  logger.info('Cerrando conexiones y deteniendo servidor...');
   for (const svc of dbServices) {
     if (svc.disconnect) {
       try {
         await svc.disconnect();
       } catch {
-        // ignore errors on shutdown
+        //? ignore
       }
     }
   }
