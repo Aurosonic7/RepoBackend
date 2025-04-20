@@ -1,0 +1,38 @@
+# Dependencias de Node
+/node_modules/
+
+# Archivos de entorno
+.env
+/env/.env
+
+# Prisma: migraciones y artefactos generados
+/prisma/migrations/
+/.prisma/
+
+# Build y artefactos de compilación (si llegas a usar)
+/dist/
+/build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Cobertura de tests
+/coverage/
+
+# Carpetas y archivos temporales del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Directorios y archivos de IDE/editores
+.vscode/
+.idea/
+
+# Otros
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
