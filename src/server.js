@@ -1,4 +1,3 @@
-// src/server.js
 import express from 'express';
 import { corsMiddleware } from './middlewares/cors.js';
 import { securityMiddleware } from './middlewares/security.js';
@@ -15,7 +14,7 @@ import logger, { notFoundHandler, errorHandler } from './utils/errorHandler.js';
 
 const app = express();
 
-// ─── Middlewares ────────────────────────────────────────────────────────────────
+//? ─── Middlewares ────────────────────────────────────────────────────────────────
 app.use(corsMiddleware);
 app.use(securityMiddleware);
 app.use(rateLimiter);
@@ -25,14 +24,17 @@ app.use(morganMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ─── API Routes ─────────────────────────────────────────────────────────────────
+//? ─── API Routes ─────────────────────────────────────────────────────────────────
 //! app.use('/api', routes);
+app.get('/api', (req, res) => {
+    res.json({ message: 'Server is running...' });
+  });
 
-// ─── 404 & Error Handlers ───────────────────────────────────────────────────────
+//? ─── 404 & Error Handlers ───────────────────────────────────────────────────────
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// ─── Database Services ──────────────────────────────────────────────────────────
+//? ─── Database Services ──────────────────────────────────────────────────────────
 const dbServices = [
   {
     name: 'MySQL',
@@ -50,7 +52,7 @@ const dbServices = [
   }
 ];
 
-// Initialize all DB connections (non‑blocking startup)
+//! Initialize all DB connections (non‑blocking startup)
 async function initDatabases() {
   for (const svc of dbServices) {
     try {
@@ -62,7 +64,7 @@ async function initDatabases() {
   }
 }
 
-// ─── Server Startup ─────────────────────────────────────────────────────────────
+//! ─── Server Startup ─────────────────────────────────────────────────────────────
 async function startServer() {
   await initDatabases();
   app.listen(config.app.port, () => {
@@ -72,7 +74,7 @@ async function startServer() {
 
 startServer();
 
-// ─── Graceful Shutdown ──────────────────────────────────────────────────────────
+//! ─── Graceful Shutdown ──────────────────────────────────────────────────────────
 process.on('SIGINT', async () => {
   logger.info('Cerrando conexiones...');
   for (const svc of dbServices) {
