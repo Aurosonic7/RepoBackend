@@ -1,14 +1,10 @@
-// config/databases/mongo.js
 import mongoose from 'mongoose';
 import config from '../config.js';
 import logger from '../../src/utils/errorHandler.js';
 
 export async function connectMongo() {
   try {
-    await mongoose.connect(config.mongo.URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
+    await mongoose.connect(config.mongo.URI);
     logger.info('Conexión establecida con MongoDB');
   } catch (err) {
     logger.error(`Error al conectar a MongoDB: ${err.stack || err}`);
