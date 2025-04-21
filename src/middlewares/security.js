@@ -1,4 +1,3 @@
-// src/middlewares/security.js
 import helmet from 'helmet';
 
 export const securityMiddleware = helmet({

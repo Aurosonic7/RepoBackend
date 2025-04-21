@@ -4,6 +4,7 @@
 # Archivos de entorno
 .env
 /env/.env
+.env.*
 
 # Prisma: migraciones y artefactos generados
 /prisma/migrations/
