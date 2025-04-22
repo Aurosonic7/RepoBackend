@@ -1,18 +1,18 @@
-import express from 'express';
+import express from "express";
 
-import { corsMiddleware } from './middlewares/cors.js';
-import { securityMiddleware } from './middlewares/security.js';
-import { rateLimiter } from './middlewares/rateLimiter.js';
-import { compressionMiddleware } from './middlewares/compression.js';
-import { requestIdMiddleware } from './middlewares/requestId.js';
-import { morganMiddleware } from './middlewares/logger.js';
+import { corsMiddleware } from "./middlewares/cors.js";
+import { securityMiddleware } from "./middlewares/security.js";
+import { rateLimiter } from "./middlewares/rateLimiter.js";
+import { compressionMiddleware } from "./middlewares/compression.js";
+import { requestIdMiddleware } from "./middlewares/requestId.js";
+import { morganMiddleware } from "./middlewares/logger.js";
 
-import config from '../config/config.js';
-import { openConnection, closeConnection } from '../config/databases/mysql.js';
-import { connectMongo, disconnectMongo } from '../config/databases/mongo.js';
-import logger, { notFoundHandler, errorHandler } from './utils/errorHandler.js';
-import { ensureMigrationsDir, runMigrations } from './utils/migrations.js';
-//! import routes from './routes/index.js';
+import config from "../config/config.js";
+import { openConnection, closeConnection } from "../config/databases/mysql.js";
+import { connectMongo, disconnectMongo } from "../config/databases/mongo.js";
+import logger, { notFoundHandler, errorHandler } from "./utils/errorHandler.js";
+import { ensureMigrationsDir, runMigrations } from "./utils/migrations.js";
+import authRoutes from "./routes/auth.routes.js";
 
 //! ─── Asegurar carpeta de migraciones ─────────────────────────────────────────────
 ensureMigrationsDir();
@@ -30,8 +30,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 //? ─── API Routes ─────────────────────────────────────────────────────────────────
-app.get('/api', (req, res) => res.json({ message: 'Server is running...' }));
-//! app.use('/api', routes);
+app.get("/api", (req, res) => res.json({ message: "Server is running..." }));
+app.use("/api/auth", authRoutes);
 
 //? ─── 404 & Error Handlers ───────────────────────────────────────────────────────
 app.use(notFoundHandler);
@@ -40,18 +40,18 @@ app.use(errorHandler);
 //! ─── Database Services ──────────────────────────────────────────────────────────
 const dbServices = [
   {
-    name: 'MySQL',
+    name: "MySQL",
     connect: async () => {
       const conn = await openConnection();
       await conn.ping();
       closeConnection(conn);
-    }
+    },
   },
   {
-    name: 'MongoDB',
+    name: "MongoDB",
     connect: connectMongo,
-    disconnect: disconnectMongo
-  }
+    disconnect: disconnectMongo,
+  },
 ];
 
 async function initDatabases() {
@@ -87,8 +87,8 @@ async function startServer() {
 startServer();
 
 //! ─── Graceful Shutdown ──────────────────────────────────────────────────────────
-process.on('SIGINT', async () => {
-  logger.info('Cerrando conexiones y deteniendo servidor...');
+process.on("SIGINT", async () => {
+  logger.info("Cerrando conexiones y deteniendo servidor...");
   for (const svc of dbServices) {
     if (svc.disconnect) {
       try {
