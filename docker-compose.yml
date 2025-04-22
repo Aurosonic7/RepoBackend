@@ -1,0 +1,48 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: db_mysql
+    restart: unless-stopped
+    env_file:
+      - .env.development
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:6.0
+    container_name: db_mongo
+    restart: unless-stopped
+    env_file:
+      - .env.development
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  app:
+    build: .
+    image: repobackend-app:latest
+    container_name: app_repobackend
+    restart: unless-stopped
+    env_file:
+      - .env.development
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mysql
+      - mongo
+    volumes:
+      - .:/usr/src/app
+    working_dir: /usr/src/app
+    command: npm run dev
+
+volumes:
+  mysql-data:
+  mongo-data:
