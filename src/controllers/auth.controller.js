@@ -1,3 +1,5 @@
+// src/controllers/auth.controller.js
+
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import config from "../../config/config.js";
@@ -8,7 +10,7 @@ export async function register(req, res, next) {
   try {
     const { name, email, password } = req.body;
 
-    //* 1) Verificar que no exista ya
+    // 1) Verificar que no exista ya
     const existing = await findUserByEmail(email);
     if (existing) {
       return res
@@ -16,13 +18,13 @@ export async function register(req, res, next) {
         .json({ success: false, message: "Email ya registrado" });
     }
 
-    //* 2) Hash de la contraseña
+    // 2) Hash de la contraseña
     const hashed = await bcrypt.hash(password, 10);
 
-    //* 3) Crear usuario
+    // 3) Crear usuario
     const newUser = await createUser({ name, email, password: hashed });
 
-    //* 4) Responder con el usuario creado (sin password)
+    // 4) Responder con el usuario creado (sin password)
     return res.status(201).json({ success: true, user: newUser });
   } catch (err) {
     logger.error(`Error en register: ${err.stack || err}`);
@@ -34,7 +36,7 @@ export async function login(req, res, next) {
   try {
     const { email, password } = req.body;
 
-    //* 1) Buscar usuario
+    // 1) Buscar usuario y estado activo
     const user = await findUserByEmail(email);
     if (!user || !user.isActive) {
       return res
@@ -42,7 +44,7 @@ export async function login(req, res, next) {
         .json({ success: false, message: "Usuario o contraseña incorrectos" });
     }
 
-    //* 2) Verificar contraseña
+    // 2) Verificar contraseña
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return res
@@ -50,7 +52,7 @@ export async function login(req, res, next) {
         .json({ success: false, message: "Usuario o contraseña incorrectos" });
     }
 
-    //* 3) Firmar JWT
+    // 3) Firmar JWT
     const payload = {
       idUser: user.idUser,
       name: user.name,
@@ -60,17 +62,23 @@ export async function login(req, res, next) {
       expiresIn: "8h",
     });
 
-    //* 4) Responder con token y datos del usuario
-    return res.json({
-      success: true,
-      token,
-      user: {
-        idUser: user.idUser,
-        name: user.name,
-        email: user.email,
-        rol: user.rol,
-      },
-    });
+    // 4) Enviar cookie con el token (no lo devolvemos en JSON)
+    res
+      .cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 8 * 60 * 60 * 1000, // 8 horas
+      })
+      .json({
+        success: true,
+        user: {
+          idUser: user.idUser,
+          name: user.name,
+          email: user.email,
+          rol: user.rol,
+        },
+      });
   } catch (err) {
     logger.error(`Error en login: ${err.stack || err}`);
     return next(err);
@@ -78,6 +86,12 @@ export async function login(req, res, next) {
 }
 
 export function logout(req, res) {
-  //? Si manejaras cookies: res.clearCookie('token');
-  return res.json({ success: true, message: "Logout exitoso" });
+  // 1) Limpia la cookie 'token'
+  res
+    .clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    })
+    .json({ success: true, message: "Logout exitoso" });
 }

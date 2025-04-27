@@ -6,13 +6,19 @@ import { rateLimiter } from "./middlewares/rateLimiter.js";
 import { compressionMiddleware } from "./middlewares/compression.js";
 import { requestIdMiddleware } from "./middlewares/requestId.js";
 import { morganMiddleware } from "./middlewares/logger.js";
+import cookieParser from "cookie-parser";
 
 import config from "../config/config.js";
 import { openConnection, closeConnection } from "../config/databases/mysql.js";
 import { connectMongo, disconnectMongo } from "../config/databases/mongo.js";
 import logger, { notFoundHandler, errorHandler } from "./utils/errorHandler.js";
 import { ensureMigrationsDir, runMigrations } from "./utils/migrations.js";
+
 import authRoutes from "./routes/auth.routes.js";
+import categoryRoutes from "./routes/category.routes.js";
+import careerRoutes from "./routes/career.routes.js";
+import resourceRoutes from "./routes/resource.routes.js";
+import resourceUserRoutes from "./routes/resource-user.routes.js";
 
 //! ─── Asegurar carpeta de migraciones ─────────────────────────────────────────────
 ensureMigrationsDir();
@@ -23,6 +29,7 @@ const app = express();
 app.use(corsMiddleware);
 app.use(securityMiddleware);
 app.use(rateLimiter);
+app.use(cookieParser());
 app.use(compressionMiddleware);
 app.use(requestIdMiddleware);
 app.use(morganMiddleware);
@@ -32,6 +39,10 @@ app.use(express.urlencoded({ extended: true }));
 //? ─── API Routes ─────────────────────────────────────────────────────────────────
 app.get("/api", (req, res) => res.json({ message: "Server is running..." }));
 app.use("/api/auth", authRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/careers", careerRoutes);
+app.use("/api/resources", resourceRoutes);
+app.use("/api/resource-user", resourceUserRoutes);
 
 //? ─── 404 & Error Handlers ───────────────────────────────────────────────────────
 app.use(notFoundHandler);
