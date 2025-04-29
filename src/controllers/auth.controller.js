@@ -65,7 +65,7 @@ export async function login(req, res, next) {
     // 4) Enviar cookie con el token (no lo devolvemos en JSON)
     res
       .cookie("token", token, {
-        httpOnly: true,
+        httpOnly: false,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         maxAge: 8 * 60 * 60 * 1000, // 8 horas
@@ -89,7 +89,7 @@ export function logout(req, res) {
   // 1) Limpia la cookie 'token'
   res
     .clearCookie("token", {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
     })
