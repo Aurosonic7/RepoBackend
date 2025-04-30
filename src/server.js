@@ -19,6 +19,7 @@ import categoryRoutes from "./routes/category.routes.js";
 import careerRoutes from "./routes/career.routes.js";
 import resourceRoutes from "./routes/resource.routes.js";
 import resourceUserRoutes from "./routes/resource-user.routes.js";
+import userRoutes from "./routes/user.routes.js";
 
 //! ─── Asegurar carpeta de migraciones ─────────────────────────────────────────────
 ensureMigrationsDir();
@@ -39,6 +40,7 @@ app.use(express.urlencoded({ extended: true }));
 //? ─── API Routes ─────────────────────────────────────────────────────────────────
 app.get("/api", (req, res) => res.json({ message: "Server is running..." }));
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/careers", careerRoutes);
 app.use("/api/resources", resourceRoutes);

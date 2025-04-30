@@ -1,4 +1,3 @@
-
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import config from "../../config/config.js";
@@ -88,28 +87,27 @@ export async function login(req, res, next) {
 export const verifyToken = async (req, res, next) => {
   try {
     const { token } = req.cookies;
-    
+
     if (!token) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "No se proporcionó token" 
+      return res.status(401).json({
+        success: false,
+        message: "No se proporcionó token",
       });
     }
 
     jwt.verify(token, config.app.jwtSecret, async (error, user) => {
-      console.log("Verificando token:", user);
       if (error) {
-        return res.status(401).json({ 
-          success: false, 
-          message: "Token inválido o caducado" 
+        return res.status(401).json({
+          success: false,
+          message: "Token inválido o caducado",
         });
       }
 
-      const userFound = await findUserByEmail(user.email || '');
+      const userFound = await findUserByEmail(user.email || "");
       if (!userFound || !userFound.isActive) {
-        return res.status(401).json({ 
-          success: false, 
-          message: "Usuario no encontrado o inactivo" 
+        return res.status(401).json({
+          success: false,
+          message: "Usuario no encontrado o inactivo",
         });
       }
 
@@ -119,8 +117,8 @@ export const verifyToken = async (req, res, next) => {
           idUser: userFound.idUser,
           name: userFound.name,
           email: userFound.email,
-          rol: userFound.rol
-        }
+          rol: userFound.rol,
+        },
       });
     });
   } catch (err) {
