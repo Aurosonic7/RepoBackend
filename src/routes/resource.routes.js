@@ -11,7 +11,7 @@ import {
 const router = Router();
 
 router.post("/", authenticateToken, createResource);
-router.get("/", getResources); //! No requiere autenticación en este caso
+router.get("/", getResources); //! No authentication needed
 router.get("/:id", authenticateToken, getResourceById);
 router.put("/:id", authenticateToken, updateResource);
 router.delete("/:id", authenticateToken, deleteResource);
