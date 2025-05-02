@@ -15,5 +15,5 @@ CREATE TABLE
     FOREIGN KEY (idCategory) REFERENCES Category (idCategory),
     FOREIGN KEY (idDirector) REFERENCES User (idUser),
     FOREIGN KEY (idRevisor1) REFERENCES User (idUser),
-    FOREIGN KEY (idRevisor2) REFERENCES User (idUser),
+    FOREIGN KEY (idRevisor2) REFERENCES User (idUser)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
