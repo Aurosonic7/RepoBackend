@@ -1,0 +1,5 @@
+CREATE TABLE
+    IF NOT EXISTS Faculty (
+        idFaculty INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(55) NOT NULL
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

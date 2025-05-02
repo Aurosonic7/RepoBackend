@@ -27,6 +27,7 @@ pnpm-debug.log*
 # Carpetas y archivos temporales del sistema operativo
 .DS_Store
 Thumbs.db
+cookies.txt
 
 # Directorios y archivos de IDE/editores
 .vscode/
@@ -37,3 +38,4 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
+*.sh
