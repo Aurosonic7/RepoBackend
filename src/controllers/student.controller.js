@@ -5,6 +5,7 @@ import {
   selectStudentById,
   updateStudentById,
   deleteStudentById,
+  getFacultyAndCareerByStudent,
 } from "../gateways/student.gateway.js";
 
 export async function createStudent(req, res, next) {
@@ -70,6 +71,21 @@ export async function deleteStudent(req, res, next) {
     res.json({ success: true, message: "Estudiante eliminado" });
   } catch (err) {
     logger.error(`Error en deleteStudent: ${err.stack || err}`);
+    next(err);
+  }
+}
+
+export async function getFacultyAndCareerStudent(req, res, next) {
+  try {
+    const idStudent = Number(req.params.id);
+    const facultyAndCareer = await getFacultyAndCareerByStudent(idStudent);
+    if (!facultyAndCareer)
+      return res
+        .status(404)
+        .json({ success: false, message: "Estudiante no encontrado" });
+    res.json({ success: true, facultyAndCareer });
+  } catch (err) {
+    logger.error(`Error en getFacultyAndCareerByStudent: ${err.stack || err}`);
     next(err);
   }
 }

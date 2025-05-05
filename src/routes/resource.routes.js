@@ -6,6 +6,7 @@ import {
   getResourceById,
   updateResource,
   deleteResource,
+  getFacultyAndCareer,
 } from "../controllers/resource.controller.js";
 
 const router = Router();
@@ -15,5 +16,6 @@ router.get("/", getResources); //! No authentication needed
 router.get("/:id", authenticateToken, getResourceById);
 router.put("/:id", authenticateToken, updateResource);
 router.delete("/:id", authenticateToken, deleteResource);
+router.get("/faculty-and-career/:id", authenticateToken, getFacultyAndCareer);
 
 export default router;

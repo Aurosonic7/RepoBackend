@@ -6,6 +6,7 @@ import {
   getStudentById,
   updateStudent,
   deleteStudent,
+  getFacultyAndCareerStudent,
 } from "../controllers/student.controller.js";
 
 const router = Router();
@@ -15,5 +16,10 @@ router.get("/", getStudents); //! No authentication needed
 router.get("/:id", authenticateToken, getStudentById);
 router.put("/:id", authenticateToken, updateStudent);
 router.delete("/:id", authenticateToken, deleteStudent);
+router.get(
+  "/faculty-and-career/:id",
+  authenticateToken,
+  getFacultyAndCareerStudent
+);
 
 export default router;

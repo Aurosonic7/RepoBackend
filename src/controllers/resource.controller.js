@@ -7,6 +7,7 @@ import {
   selectResourceById,
   updateResourceById,
   deleteResourceById,
+  getFacultyAndCareerByResource,
 } from "../gateways/resource.gateway.js";
 
 export async function createResource(req, res, next) {
@@ -16,8 +17,9 @@ export async function createResource(req, res, next) {
       description,
       datePublication,
       isActive,
+      filePath,
+      idStudent,
       idCategory,
-      idCareer,
       idDirector,
       idRevisor1,
       idRevisor2,
@@ -28,8 +30,9 @@ export async function createResource(req, res, next) {
       description,
       datePublication,
       isActive,
+      filePath,
+      idStudent,
       idCategory,
-      idCareer,
       idDirector,
       idRevisor1,
       idRevisor2,
@@ -56,11 +59,10 @@ export async function getResourceById(req, res, next) {
   try {
     const id = Number(req.params.id);
     const resource = await selectResourceById(id);
-    if (!resource) {
+    if (!resource)
       return res
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
-    }
     res.json({ success: true, resource });
   } catch (err) {
     logger.error(`Error en getResourceById: ${err.stack || err}`);
@@ -71,13 +73,12 @@ export async function getResourceById(req, res, next) {
 export async function updateResource(req, res, next) {
   try {
     const id = Number(req.params.id);
-    const updates = req.body; // puede contener cualesquiera de los campos
+    const updates = req.body; //! puede contener cualesquiera de los campos
     const updated = await updateResourceById(id, updates);
-    if (!updated) {
+    if (!updated)
       return res
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
-    }
     res.json({ success: true, resource: updated });
   } catch (err) {
     logger.error(`Error en updateResource: ${err.stack || err}`);
@@ -89,14 +90,31 @@ export async function deleteResource(req, res, next) {
   try {
     const id = Number(req.params.id);
     const deleted = await deleteResourceById(id);
-    if (!deleted) {
+    if (!deleted)
       return res
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
-    }
     res.json({ success: true, message: "Recurso eliminado correctamente" });
   } catch (err) {
     logger.error(`Error en deleteResource: ${err.stack || err}`);
+    next(err);
+  }
+}
+
+export async function getFacultyAndCareerResource(req, res, next) {
+  try {
+    const idResource = Number(req.params.id);
+    const data = await getFacultyAndCareerByResource(idResource);
+
+    if (!data)
+      return res.status(404).json({
+        success: false,
+        message: "Facultad o carrera no encontrada para este recurso",
+      });
+
+    res.json({ success: true, data });
+  } catch (err) {
+    logger.error(`Error en getFacultyAndCareer: ${err.stack || err}`);
     next(err);
   }
 }
