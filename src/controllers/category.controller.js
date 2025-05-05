@@ -65,11 +65,10 @@ export async function deleteCategory(req, res, next) {
   try {
     const id = Number(req.params.id);
     const deleted = await deleteCategoryById(id);
-    if (!deleted) {
+    if (!deleted)
       return res
         .status(404)
         .json({ success: false, message: "Categoría no encontrada" });
-    }
     res.json({ success: true, message: "Categoría eliminada correctamente" });
   } catch (err) {
     logger.error(`Error en deleteCategory: ${err.stack || err}`);

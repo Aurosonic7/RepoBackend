@@ -11,7 +11,7 @@ import {
 const router = Router();
 
 router.post("/", authenticateToken, createCareer);
-router.get("/", authenticateToken, getCareers);
+router.get("/", getCareers); //! No authentication needed
 router.get("/:id", authenticateToken, getCareerById);
 router.put("/:id", authenticateToken, updateCareer);
 router.delete("/:id", authenticateToken, deleteCareer);

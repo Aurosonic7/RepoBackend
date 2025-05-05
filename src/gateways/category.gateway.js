@@ -65,10 +65,7 @@ export async function updateCategoryById(id, { name, description }) {
       fields.push("description = ?");
       params.push(description);
     }
-    if (fields.length === 0) {
-      // nada que actualizar
-      return await selectCategoryById(id);
-    }
+    if (fields.length === 0) return await selectCategoryById(id);
     params.push(id);
     const [result] = await conn.query(
       `UPDATE Category
@@ -76,10 +73,7 @@ export async function updateCategoryById(id, { name, description }) {
        WHERE idCategory = ?`,
       params
     );
-    if (result.affectedRows === 0) {
-      return null;
-    }
-    // devolver la fila actualizada
+    if (result.affectedRows === 0) return null;
     return await selectCategoryById(id);
   } finally {
     closeConnection(conn);

@@ -11,7 +11,7 @@ import {
 const router = Router();
 
 router.post("/", authenticateToken, createCategory);
-router.get("/", authenticateToken, getCategories);
+router.get("/", getCategories); //! No authentication needed
 router.get("/:id", authenticateToken, getCategoryById);
 router.put("/:id", authenticateToken, updateCategory);
 router.delete("/:id", authenticateToken, deleteCategory);

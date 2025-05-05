@@ -9,8 +9,8 @@ import {
 
 export async function createCareer(req, res, next) {
   try {
-    const { name, schoolName } = req.body;
-    const newCareer = await insertCareer({ name, schoolName });
+    const { name, idFaculty } = req.body;
+    const newCareer = await insertCareer({ name, idFaculty });
     res.status(201).json({ success: true, career: newCareer });
   } catch (err) {
     logger.error(`Error en createCareer: ${err.stack || err}`);
@@ -32,11 +32,10 @@ export async function getCareerById(req, res, next) {
   try {
     const id = Number(req.params.id);
     const career = await selectCareerById(id);
-    if (!career) {
+    if (!career)
       return res
         .status(404)
         .json({ success: false, message: "Carrera no encontrada" });
-    }
     res.json({ success: true, career });
   } catch (err) {
     logger.error(`Error en getCareerById: ${err.stack || err}`);
@@ -47,13 +46,12 @@ export async function getCareerById(req, res, next) {
 export async function updateCareer(req, res, next) {
   try {
     const id = Number(req.params.id);
-    const { name, schoolName } = req.body;
-    const updated = await updateCareerById(id, { name, schoolName });
-    if (!updated) {
+    const { name, idFaculty } = req.body;
+    const updated = await updateCareerById(id, { name, idFaculty });
+    if (!updated)
       return res
         .status(404)
         .json({ success: false, message: "Carrera no encontrada" });
-    }
     res.json({ success: true, career: updated });
   } catch (err) {
     logger.error(`Error en updateCareer: ${err.stack || err}`);
@@ -65,11 +63,10 @@ export async function deleteCareer(req, res, next) {
   try {
     const id = Number(req.params.id);
     const deleted = await deleteCareerById(id);
-    if (!deleted) {
+    if (!deleted)
       return res
         .status(404)
         .json({ success: false, message: "Carrera no encontrada" });
-    }
     res.json({ success: true, message: "Carrera eliminada correctamente" });
   } catch (err) {
     logger.error(`Error en deleteCareer: ${err.stack || err}`);

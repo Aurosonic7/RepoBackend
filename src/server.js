@@ -15,11 +15,13 @@ import logger, { notFoundHandler, errorHandler } from "./utils/errorHandler.js";
 import { ensureMigrationsDir, runMigrations } from "./utils/migrations.js";
 
 import authRoutes from "./routes/auth.routes.js";
-import categoryRoutes from "./routes/category.routes.js";
+import userRoutes from "./routes/user.routes.js";
+import facultyRoutes from "./routes/faculty.routes.js";
 import careerRoutes from "./routes/career.routes.js";
+import studentRoutes from "./routes/student.routes.js";
+import categoryRoutes from "./routes/category.routes.js";
 import resourceRoutes from "./routes/resource.routes.js";
 import resourceUserRoutes from "./routes/resource-user.routes.js";
-import userRoutes from "./routes/user.routes.js";
 
 //! ─── Asegurar carpeta de migraciones ─────────────────────────────────────────────
 ensureMigrationsDir();
@@ -41,8 +43,10 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/api", (req, res) => res.json({ message: "Server is running..." }));
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/categories", categoryRoutes);
+app.use("/api/faculties", facultyRoutes);
 app.use("/api/careers", careerRoutes);
+app.use("/api/students", studentRoutes);
+app.use("/api/categories", categoryRoutes);
 app.use("/api/resources", resourceRoutes);
 app.use("/api/resource-user", resourceUserRoutes);
 

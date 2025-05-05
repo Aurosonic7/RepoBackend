@@ -11,7 +11,7 @@ import {
 const router = Router();
 
 router.post("/", authenticateToken, createUser);
-router.get("/", authenticateToken, getUsers);
+router.get("/", getUsers); //! No authentication needed
 router.get("/:id", authenticateToken, getUserById);
 router.put("/:id", authenticateToken, updateUser);
 router.delete("/:id", authenticateToken, deleteUser);
