@@ -1,16 +1,31 @@
-// src/middlewares/uploadToDropbox.js
-import { uploadBuffer } from "../utils/dropbox.js";
+import crypto from "node:crypto";
+import { uploadBuffer, getTempLink } from "../utils/dropbox.js";
 
 export async function uploadToDropbox(req, _res, next) {
-  if (!req.file) return next(); // no llevaba archivo
+  if (!req.file) return next();
 
   try {
-    const filename = `${Date.now()}_${req.file.originalname}`;
-    const url = await uploadBuffer(req.file.buffer, filename);
+    /* 1) Hash SHA‑256 → nombre de archivo único y determinístico */
+    const hash = crypto
+      .createHash("sha256")
+      .update(req.file.buffer)
+      .digest("hex");
+    const ext = req.file.originalname.split(".").pop()?.toLowerCase() || "bin";
+    const path = `/files/${hash}.${ext}`; // carpeta fija
 
-    req.file.dropboxUrl = url; // ← controlador lo usará
+    /* 2) Comprueba si ya existe pidiendo un link temporal.
+          Si falla, lo sube; si no, reutiliza. */
+    let tempLink;
+    try {
+      tempLink = await getTempLink(path); // existe – sólo link
+    } catch {
+      tempLink = await uploadBuffer(req.file.buffer, path); // se acaba de subir
+    }
+
+    /* 3) Guarda la info para que el controller la use */
+    req.file.dropbox = { path, tmp: tempLink, hash };
     return next();
   } catch (err) {
-    return next(err); // lo captura errorHandler
+    return next(err); // lo atrapará tu errorHandler
   }
 }

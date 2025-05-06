@@ -1,58 +1,65 @@
-// src/controllers/resource.controller.js
 import logger from "../utils/errorHandler.js";
+import FileModel from "../models/file.model.js";
 import {
   insertResource,
   selectAllResources,
   selectResourceById,
+  selectActiveResourceById,
   updateResourceById,
-  deleteResourceById,
+  softDeleteResourceById,
+  enableResourceById,
+  hardDeleteResourceById,
   getFacultyAndCareerByResource,
 } from "../gateways/resource.gateway.js";
-import FileModel from "../models/file.model.js";
+import {
+  openConnection,
+  closeConnection,
+} from "../../config/databases/mysql.js";
+import { safeDelete, getTempLink } from "../utils/dropbox.js";
 
-/* -------------------------------------------------------------------------- */
-/*  CREATE ─ POST /api/resources                                              */
-/* -------------------------------------------------------------------------- */
-/*  Este handler asume que en el *route* se ejecutan, **en este orden**:      *
- *    1)  `upload.single("file")`  (multer – pone el archivo en `req.file`)   *
- *    2)  `uploadToDropbox`        (añade `req.file.dropboxUrl`)              */
+/* ─────────────── POST /api/resources ─────────────── */
 export async function createResource(req, res, next) {
+  if (!req.file?.dropbox)
+    return res
+      .status(400)
+      .json({ success: false, message: "Archivo requerido" });
+
+  const {
+    title,
+    description,
+    datePublication,
+    isActive = true,
+    idStudent,
+    idCategory,
+    idDirector,
+    idRevisor1,
+    idRevisor2,
+  } = req.body;
+
+  const { path: dropboxPath } = req.file.dropbox;
+
+  const conn = await openConnection();
   try {
-    /* ------------------------------- payload ------------------------------ */
-    const {
-      title,
-      description,
-      datePublication,
-      isActive = true,
-      idStudent,
-      idCategory,
-      idDirector,
-      idRevisor1,
-      idRevisor2,
-    } = req.body;
+    await conn.beginTransaction();
 
-    /* ---------------------------- archivo check --------------------------- */
-    if (!req.file?.dropboxUrl) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Archivo requerido" });
-    }
+    /* 1) MySQL */
+    const newResource = await insertResource(
+      {
+        title,
+        description,
+        datePublication,
+        isActive,
+        filePath: dropboxPath,
+        idStudent: +idStudent,
+        idCategory: +idCategory,
+        idDirector: +idDirector,
+        idRevisor1: +idRevisor1,
+        idRevisor2: +idRevisor2,
+      },
+      conn
+    );
 
-    /* ------------------------------ MySQL --------------------------------- */
-    const newResource = await insertResource({
-      title,
-      description,
-      datePublication,
-      isActive: Number(isActive) ? 1 : 0,
-      filePath: req.file.dropboxUrl,
-      idStudent: Number(idStudent),
-      idCategory: Number(idCategory),
-      idDirector: Number(idDirector),
-      idRevisor1: Number(idRevisor1),
-      idRevisor2: Number(idRevisor2),
-    });
-
-    /* ------------------------------ Mongo --------------------------------- */
+    /* 2) Mongo */
     await FileModel.create({
       id_recurso: newResource.idResource,
       archivo: req.file.originalname,
@@ -68,109 +75,154 @@ export async function createResource(req, res, next) {
           fecha: new Date(datePublication || Date.now()),
         },
       ],
+      dropbox_path: dropboxPath,
     });
 
+    await conn.commit();
     return res.status(201).json({ success: true, resource: newResource });
   } catch (err) {
-    logger.error(`Error en createResource: ${err.stack || err}`);
-    return next(err);
+    await conn.rollback();
+    await safeDelete(dropboxPath);
+    next(err);
+  } finally {
+    closeConnection(conn);
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/*  READ – GET                                                                */
-/* -------------------------------------------------------------------------- */
-export async function getResources(_req, res, next) {
+/* ─────────────── GETs ─────────────── */
+export async function getResources(req, res, next) {
   try {
-    const resources = await selectAllResources();
-    res.json({ success: true, resources });
-  } catch (err) {
-    logger.error(`Error en getResources: ${err.stack || err}`);
-    next(err);
+    const list = await selectAllResources();
+    if (req.query.includeFile === "true") {
+      await Promise.all(
+        list.map(async (r) => {
+          r.tempFileUrl = await getTempLink(r.filePath);
+        })
+      );
+    }
+    return res.json({ success: true, resources: list });
+  } catch (e) {
+    next(e);
   }
 }
 
 export async function getResourceById(req, res, next) {
   try {
-    const id = Number(req.params.id);
-    const resource = await selectResourceById(id);
-    if (!resource) {
+    const r = await selectActiveResourceById(+req.params.id);
+    if (!r)
       return res
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
-    }
-    res.json({ success: true, resource });
-  } catch (err) {
-    logger.error(`Error en getResourceById: ${err.stack || err}`);
-    next(err);
+    if (req.query.includeFile === "true")
+      r.tempFileUrl = await getTempLink(r.filePath);
+    return res.json({ success: true, resource: r });
+  } catch (e) {
+    next(e);
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/*  UPDATE – PUT /api/resources/:id                                           */
-/* -------------------------------------------------------------------------- */
+/* ─────────────── PUT /resources/:id ─────────────── */
 export async function updateResource(req, res, next) {
   try {
-    const id = Number(req.params.id);
-
-    /*  Si el *route* incluye `upload.single("file")` + `uploadToDropbox`,
-        podríamos permitir actualizar el fichero.         */
-    const updates = { ...req.body };
-
-    if (req.file?.dropboxUrl) {
-      updates.filePath = req.file.dropboxUrl;
-    }
-
-    const updated = await updateResourceById(id, updates);
-    if (!updated) {
+    const body = { ...req.body };
+    if (req.file?.dropbox) body.filePath = req.file.dropbox.path;
+    const up = await updateResourceById(+req.params.id, body);
+    if (!up)
       return res
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
-    }
-    res.json({ success: true, resource: updated });
-  } catch (err) {
-    logger.error(`Error en updateResource: ${err.stack || err}`);
-    next(err);
+    res.json({ success: true, resource: up });
+  } catch (e) {
+    next(e);
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/*  DELETE – DELETE /api/resources/:id                                        */
-/* -------------------------------------------------------------------------- */
-export async function deleteResource(req, res, next) {
+/* ─────────────── PATCH /resources/:id/disable ───── */
+export async function disableResource(req, res, next) {
   try {
-    const id = Number(req.params.id);
-    const deleted = await deleteResourceById(id);
-    if (!deleted) {
+    const id = +req.params.id;
+    /* ¿existe?  */
+    const current = await selectResourceById(id);
+    if (!current)
       return res
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
-    }
-    res.json({ success: true, message: "Recurso eliminado correctamente" });
+    /* ya inactivo ⇒ nada que hacer  */
+    if (!current.isActive)
+      return res.json({
+        success: true,
+        message: "Recurso ya estaba deshabilitado",
+      });
+    /* soft‑delete en MySQL  */
+    await softDeleteResourceById(id);
+    /* marca en Mongo  */
+    await FileModel.updateMany(
+      { id_recurso: id },
+      { $set: { eliminado: true, fecha_eliminado: new Date() } }
+    );
+    return res.json({ success: true, message: "Recurso deshabilitado" });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/* ───────────── PATCH /api/resources/:id/enable ───── */
+export async function enableResource(req, res, next) {
+  try {
+    const id = +req.params.id;
+    /* ¿existe? */
+    const current = await selectResourceById(id);
+    if (!current)
+      return res
+        .status(404)
+        .json({ success: false, message: "Recurso no encontrado" });
+    /* ya activo */
+    if (current.isActive)
+      return res.json({
+        success: true,
+        message: "Recurso ya estaba habilitado",
+      });
+    /* reactiva en MySQL  */
+    await enableResourceById(id);
+    /* des‑marca en Mongo  */
+    await FileModel.updateMany(
+      { id_recurso: id },
+      { $set: { eliminado: false }, $unset: { fecha_eliminado: 1 } }
+    );
+    return res.json({ success: true, message: "Recurso habilitado" });
   } catch (err) {
-    logger.error(`Error en deleteResource: ${err.stack || err}`);
     next(err);
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/*  EXTRA – GET /api/resources/faculty-and-career/:id                         */
-/* -------------------------------------------------------------------------- */
+/* ─────────────── DELETE /resources/:id/force ────── */
+export async function forceDeleteResource(req, res, next) {
+  const id = +req.params.id;
+  const doc = await FileModel.findOne({ id_recurso: id });
+  if (!doc)
+    return res
+      .status(404)
+      .json({ success: false, message: "Recurso no encontrado" });
+
+  try {
+    await safeDelete(doc.dropbox_path);
+    await FileModel.deleteOne({ _id: doc._id });
+    const ok = await hardDeleteResourceById(id);
+    if (!ok) throw new Error("No se pudo eliminar en MySQL");
+    res.json({ success: true, message: "Recurso eliminado definitivamente" });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/* ─────────────── EXTRA (fac‑career) ─────────────── */
 export async function getFacultyAndCareerResource(req, res, next) {
   try {
-    const idResource = Number(req.params.id);
-    const data = await getFacultyAndCareerByResource(idResource);
-
-    if (!data) {
-      return res.status(404).json({
-        success: false,
-        message: "Facultad o carrera no encontrada para este recurso",
-      });
-    }
-
-    res.json({ success: true, data });
-  } catch (err) {
-    logger.error(`Error en getFacultyAndCareer: ${err.stack || err}`);
-    next(err);
+    const d = await getFacultyAndCareerByResource(+req.params.id);
+    if (!d)
+      return res.status(404).json({ success: false, message: "No encontrado" });
+    res.json({ success: true, data: d });
+  } catch (e) {
+    next(e);
   }
 }

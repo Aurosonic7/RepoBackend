@@ -1,34 +1,30 @@
-// src/utils/dropbox.js
-import { Dropbox } from "dropbox"; // SDK v11
-import fetch from "node-fetch"; // ¡necesario en Node >= 18!
+import { Dropbox } from "dropbox";
 
-const dbx = new Dropbox({
-  accessToken: process.env.DROPBOX_TOKEN, // define la var. en .env
-  fetch,
-});
+export const dbx = new Dropbox({ accessToken: process.env.DROPBOX_TOKEN });
 
-/**
- * Sube un *buffer* a /repobackend/… y devuelve un link temporal.
- * @param {Buffer} buffer  –  req.file.buffer (multer memoryStorage)
- * @param {string} filename   –  ej. 1693923300_miArchivo.pdf
- * @returns {string}   –  URL temporal (válida 4 h)
- */
-export async function uploadBuffer(buffer, filename) {
-  const dropboxPath = `/file/${filename}`;
-
-  /* 1. upload ------------------------------------------------------------- */
-  const uploadRes = await dbx.filesUpload({
-    path: dropboxPath,
-    contents: buffer, // Buffer | Uint8Array
-    mode: { ".tag": "add" },
+export async function uploadBuffer(buffer, path) {
+  await dbx.filesUpload({
+    path,
+    contents: buffer,
+    mode: { ".tag": "overwrite" }, // overwrite pero mantiene versionado interno
+    autorename: false,
     mute: true,
   });
+  const { result } = await dbx.filesGetTemporaryLink({ path });
+  return result.link;
+}
 
-  /* 2. link --------------------------------------------------------------- */
-  //  dropbox SDK v11 → resultado está en .result
-  const linkRes = await dbx.filesGetTemporaryLink({
-    path: uploadRes.result.path_lower, // siempre lower‑case
-  });
+/** Obtiene un link temporal para un path ya existente */
+export async function getTempLink(path) {
+  const { result } = await dbx.filesGetTemporaryLink({ path });
+  return result.link; // expira en ≈4 h
+}
 
-  return linkRes.result.link; // URL https://…
+/** Elimina el fichero de Dropbox (ignora cualquier fallo) */
+export async function safeDelete(path) {
+  try {
+    await dbx.filesDeleteV2({ path });
+  } catch {
+    /* noop */
+  }
 }

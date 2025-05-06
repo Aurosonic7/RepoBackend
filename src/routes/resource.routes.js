@@ -7,7 +7,9 @@ import {
   getResources,
   getResourceById,
   updateResource,
-  deleteResource,
+  enableResource, //* (soft‑delete)
+  disableResource, //* (soft‑delete)
+  forceDeleteResource, //* (hard‑delete)
   getFacultyAndCareerResource,
 } from "../controllers/resource.controller.js";
 
@@ -23,9 +25,11 @@ router.post(
 router.get("/", getResources); //! No authentication needed
 router.get("/:id", authenticateToken, getResourceById);
 router.put("/:id", authenticateToken, updateResource);
-router.delete("/:id", authenticateToken, deleteResource);
+router.patch("/:id/enable", authenticateToken, enableResource);
+router.patch("/:id/disable", authenticateToken, disableResource); //! borrado lógico
+router.delete("/:id/force", authenticateToken, forceDeleteResource); //! borrado definitivo
 router.get(
-  "/faculty-and-career/:id",
+  "/facultyAndCareer/:id",
   authenticateToken,
   getFacultyAndCareerResource
 );
