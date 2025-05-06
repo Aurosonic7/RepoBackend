@@ -7,7 +7,7 @@ export async function insertResource({
   title,
   description,
   datePublication,
-  isActive,
+  isActive = true,
   filePath,
   idStudent,
   idCategory,
@@ -18,13 +18,15 @@ export async function insertResource({
   const conn = await openConnection();
   try {
     const [result] = await conn.query(
-      `INSERT INTO Resource (title, description, datePublication, isActive, filePath, idStudent, idCategory, idDirector, idRevisor1, idRevisor2)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO Resource
+       (title, description, datePublication, isActive, filePath,
+        idStudent, idCategory, idDirector, idRevisor1, idRevisor2)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         title,
         description,
         datePublication,
-        isActive,
+        Number(isActive) ? 1 : 0,
         filePath,
         idStudent,
         idCategory,
@@ -33,13 +35,15 @@ export async function insertResource({
         idRevisor2,
       ]
     );
-    const insertId = result.insertId;
+
     const [rows] = await conn.query(
-      `SELECT idResource, title, description, datePublication, isActive, filePath, idStudent, idCategory, idDirector, idRevisor1, idRevisor2
-       FROM Resource
-       WHERE idResource = ?`,
-      [insertId]
+      `SELECT idResource, title, description, datePublication, isActive,
+              filePath, idStudent, idCategory, idDirector, idRevisor1, idRevisor2
+       FROM   Resource
+       WHERE  idResource = ?`,
+      [result.insertId]
     );
+
     return rows[0] || null;
   } finally {
     closeConnection(conn);

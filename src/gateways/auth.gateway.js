@@ -23,7 +23,7 @@ export async function createUser({ name, email, password }) {
   try {
     const [result] = await conn.execute(
       `INSERT INTO User (name, email, password, rol, isActive)
-       VALUES (?, ?, ?, 'user', TRUE)`,
+       VALUES (?, ?, ?, 'revisor', TRUE)`,
       [name, email, password]
     );
     return {

@@ -12,7 +12,7 @@ export async function createFaculty(req, res, next) {
     const { name } = req.body;
     const newFaculty = await insertFaculty({ name });
     res.status(201).json({ sucess: true, faculty: newFaculty });
-  } finally {
+  } catch (error) {
     logger.error(`Error en createFaculty: ${error.stack || error}`);
     return next(error);
   }

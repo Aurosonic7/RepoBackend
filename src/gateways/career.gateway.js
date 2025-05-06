@@ -61,7 +61,7 @@ export async function updateCareerById(id, { name, idFaculty }) {
       fields.push("name = ?");
       params.push(name);
     }
-    if (schoolName !== undefined) {
+    if (idFaculty !== undefined) {
       fields.push("idFaculty = ?");
       params.push(idFaculty);
     }

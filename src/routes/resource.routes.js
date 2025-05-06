@@ -1,5 +1,7 @@
 import { Router } from "express";
 import authenticateToken from "../middlewares/auth.js";
+import upload from "../middlewares/upload.js";
+import { uploadToDropbox } from "../middlewares/uploadToDropbox.js";
 import {
   createResource,
   getResources,
@@ -11,7 +13,13 @@ import {
 
 const router = Router();
 
-router.post("/", authenticateToken, createResource);
+router.post(
+  "/",
+  authenticateToken,
+  upload.single("file"),
+  uploadToDropbox,
+  createResource
+);
 router.get("/", getResources); //! No authentication needed
 router.get("/:id", authenticateToken, getResourceById);
 router.put("/:id", authenticateToken, updateResource);

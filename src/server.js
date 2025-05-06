@@ -1,5 +1,11 @@
 import express from "express";
 
+import config from "../config/config.js";
+import { openConnection, closeConnection } from "../config/databases/mysql.js";
+import { connectMongo, disconnectMongo } from "../config/databases/mongo.js";
+import logger, { notFoundHandler, errorHandler } from "./utils/errorHandler.js";
+import { ensureMigrationsDir, runMigrations } from "./utils/migrations.js";
+
 import { corsMiddleware } from "./middlewares/cors.js";
 import { securityMiddleware } from "./middlewares/security.js";
 import { rateLimiter } from "./middlewares/rateLimiter.js";
@@ -7,12 +13,6 @@ import { compressionMiddleware } from "./middlewares/compression.js";
 import { requestIdMiddleware } from "./middlewares/requestId.js";
 import { morganMiddleware } from "./middlewares/logger.js";
 import cookieParser from "cookie-parser";
-
-import config from "../config/config.js";
-import { openConnection, closeConnection } from "../config/databases/mysql.js";
-import { connectMongo, disconnectMongo } from "../config/databases/mongo.js";
-import logger, { notFoundHandler, errorHandler } from "./utils/errorHandler.js";
-import { ensureMigrationsDir, runMigrations } from "./utils/migrations.js";
 
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
