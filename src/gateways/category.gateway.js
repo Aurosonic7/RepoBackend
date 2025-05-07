@@ -7,15 +7,14 @@ export async function insertCategory({ name, description }) {
   const conn = await openConnection();
   try {
     const [result] = await conn.query(
-      `INSERT INTO Category (name, description)
-       VALUES (?, ?)`,
+      `INSERT INTO Category (name, description) VALUES (?, ?)`,
       [name, description]
     );
     const insertId = result.insertId;
     const [rows] = await conn.query(
       `SELECT idCategory, name, description
-       FROM Category
-       WHERE idCategory = ?`,
+        FROM Category
+        WHERE idCategory = ?`,
       [insertId]
     );
     return rows[0] || null;
@@ -28,8 +27,7 @@ export async function selectAllCategories() {
   const conn = await openConnection();
   try {
     const [rows] = await conn.query(
-      `SELECT idCategory, name, description
-       FROM Category`
+      `SELECT idCategory, name, description FROM Category`
     );
     return rows;
   } finally {
@@ -42,8 +40,8 @@ export async function selectCategoryById(id) {
   try {
     const [rows] = await conn.query(
       `SELECT idCategory, name, description
-       FROM Category
-       WHERE idCategory = ?`,
+        FROM Category
+        WHERE idCategory = ?`,
       [id]
     );
     return rows[0] || null;
@@ -68,9 +66,7 @@ export async function updateCategoryById(id, { name, description }) {
     if (fields.length === 0) return await selectCategoryById(id);
     params.push(id);
     const [result] = await conn.query(
-      `UPDATE Category
-       SET ${fields.join(", ")}
-       WHERE idCategory = ?`,
+      `UPDATE Category SET ${fields.join(", ")} WHERE idCategory = ?`,
       params
     );
     if (result.affectedRows === 0) return null;
@@ -84,8 +80,7 @@ export async function deleteCategoryById(id) {
   const conn = await openConnection();
   try {
     const [result] = await conn.query(
-      `DELETE FROM Category
-       WHERE idCategory = ?`,
+      `DELETE FROM Category WHERE idCategory = ?`,
       [id]
     );
     return result.affectedRows > 0;

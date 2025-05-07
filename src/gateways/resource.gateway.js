@@ -15,6 +15,7 @@ export async function insertResource(data, conn = null) {
       datePublication,
       isActive = true,
       filePath,
+      imagePath,
       idStudent,
       idCategory,
       idDirector,
@@ -23,16 +24,15 @@ export async function insertResource(data, conn = null) {
     } = data;
 
     const [result] = await conn.query(
-      `INSERT INTO Resource
-       (title, description, datePublication, isActive, filePath,
-        idStudent, idCategory, idDirector, idRevisor1, idRevisor2)
-       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO Resource (title, description, datePublication, isActive, filePath, imagePath, idStudent, idCategory, idDirector, idRevisor1, idRevisor2)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       [
         title,
         description,
         datePublication,
         Number(isActive) ? 1 : 0,
         filePath,
+        imagePath,
         idStudent,
         idCategory,
         idDirector,
@@ -96,11 +96,12 @@ export async function updateResourceById(id, fields, conn = null) {
   if (own) conn = await openConnection();
 
   try {
-    const keys = Object.keys(fields);
-    if (!keys.length) return await selectResourceById(id);
+    if (!Object.keys(fields).length) return await selectResourceById(id);
 
-    const set = keys.map((k) => `${k} = ?`).join(", ");
-    const params = [...keys.map((k) => fields[k]), id];
+    const set = Object.keys(fields)
+      .map((k) => `${k} = ?`)
+      .join(", ");
+    const params = [...Object.values(fields), id];
 
     const [r] = await conn.query(
       `UPDATE Resource SET ${set} WHERE idResource = ?`,
@@ -113,9 +114,8 @@ export async function updateResourceById(id, fields, conn = null) {
   }
 }
 
-export async function hardDeleteResourceById(id, conn = null) {
-  const own = !conn;
-  if (own) conn = await openConnection();
+export async function hardDeleteResourceById(id) {
+  const conn = await openConnection();
 
   try {
     const [r] = await conn.query(`DELETE FROM Resource WHERE idResource = ?`, [
@@ -146,11 +146,11 @@ export async function getFacultyAndCareerByResource(idResource) {
     const [rows] = await conn.query(
       `SELECT f.idFaculty, f.name facultyName,
               c.idCareer, c.name careerName
-       FROM Resource r
-       JOIN Student s ON r.idStudent = s.idStudent
-       JOIN Career  c ON s.idCareer  = c.idCareer
-       JOIN Faculty f ON c.idFaculty = f.idFaculty
-       WHERE r.idResource = ?`,
+        FROM Resource r
+        JOIN Student s ON r.idStudent = s.idStudent
+        JOIN Career  c ON s.idCareer  = c.idCareer
+        JOIN Faculty f ON c.idFaculty = f.idFaculty
+        WHERE r.idResource = ?`,
       [idResource]
     );
     return rows[0] || null;

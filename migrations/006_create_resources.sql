@@ -6,6 +6,7 @@ CREATE TABLE
     datePublication DATE NOT NULL,
     isActive BOOLEAN NOT NULL DEFAULT TRUE,
     filePath VARCHAR(255) NOT NULL,
+    imagePath VARCHAR(255) NOT NULL,
     idStudent INT NOT NULL,
     idCategory INT NOT NULL,
     idDirector INT NOT NULL,

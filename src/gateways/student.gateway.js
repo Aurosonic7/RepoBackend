@@ -101,10 +101,10 @@ export async function getFacultyAndCareerByStudent(idStudent) {
     const [rows] = await conn.query(
       `SELECT f.idFaculty, f.name AS facultyName,
               c.idCareer, c.name AS careerName
-       FROM Student s
-       JOIN Career c ON s.idCareer = c.idCareer
-       JOIN Faculty f ON c.idFaculty = f.idFaculty
-       WHERE s.idStudent = ?`,
+        FROM Student s
+        JOIN Career c ON s.idCareer = c.idCareer
+        JOIN Faculty f ON c.idFaculty = f.idFaculty
+        WHERE s.idStudent = ?`,
       [idStudent]
     );
     return rows[0] || null;

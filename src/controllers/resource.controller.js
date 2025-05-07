@@ -1,4 +1,3 @@
-import logger from "../utils/errorHandler.js";
 import FileModel from "../models/file.model.js";
 import {
   insertResource,
@@ -19,10 +18,22 @@ import { safeDelete, getTempLink } from "../utils/dropbox.js";
 
 /* ─────────────── POST /api/resources ─────────────── */
 export async function createResource(req, res, next) {
-  if (!req.file?.dropbox)
-    return res
-      .status(400)
-      .json({ success: false, message: "Archivo requerido" });
+  /* -------- validación de archivos ---------- */
+  const original = req.files?.file?.[0];
+  const previewIMG = req.files?.image?.[0];
+
+  if (!original?.dropbox || !previewIMG?.dropbox)
+    return res.status(400).json({
+      success: false,
+      message: "Se requieren archivos: 'file' and 'image'",
+    });
+
+  /* –– asegurar que la imagen sea png | jpg | jpeg –– */
+  if (!/^image\/(png|jpe?g)$/i.test(previewIMG.mimetype))
+    return res.status(400).json({
+      success: false,
+      message: "La imagen debe ser PNG, JPG o JPEG",
+    });
 
   const {
     title,
@@ -36,8 +47,6 @@ export async function createResource(req, res, next) {
     idRevisor2,
   } = req.body;
 
-  const { path: dropboxPath } = req.file.dropbox;
-
   const conn = await openConnection();
   try {
     await conn.beginTransaction();
@@ -49,7 +58,8 @@ export async function createResource(req, res, next) {
         description,
         datePublication,
         isActive,
-        filePath: dropboxPath,
+        filePath: original.dropbox.path,
+        imagePath: previewIMG.dropbox.path,
         idStudent: +idStudent,
         idCategory: +idCategory,
         idDirector: +idDirector,
@@ -59,13 +69,13 @@ export async function createResource(req, res, next) {
       conn
     );
 
-    /* 2) Mongo */
+    /* 2) Mongo – solo el archivo principal */
     await FileModel.create({
       id_recurso: newResource.idResource,
-      archivo: req.file.originalname,
-      tipo: req.file.mimetype.includes("pdf")
+      archivo: original.originalname,
+      tipo: original.mimetype.includes("pdf")
         ? "pdf"
-        : req.file.mimetype.startsWith("image/")
+        : original.mimetype.startsWith("image/")
         ? "imagen"
         : "video",
       versiones: [
@@ -75,14 +85,15 @@ export async function createResource(req, res, next) {
           fecha: new Date(datePublication || Date.now()),
         },
       ],
-      dropbox_path: dropboxPath,
+      dropbox_path: original.dropbox.path,
     });
 
     await conn.commit();
     return res.status(201).json({ success: true, resource: newResource });
   } catch (err) {
     await conn.rollback();
-    await safeDelete(dropboxPath);
+    await safeDelete(original.dropbox.path);
+    await safeDelete(previewIMG.dropbox.path);
     next(err);
   } finally {
     closeConnection(conn);
@@ -97,6 +108,7 @@ export async function getResources(req, res, next) {
       await Promise.all(
         list.map(async (r) => {
           r.tempFileUrl = await getTempLink(r.filePath);
+          r.tempImageUrl = await getTempLink(r.imagePath);
         })
       );
     }
@@ -115,6 +127,7 @@ export async function getResourceById(req, res, next) {
         .json({ success: false, message: "Recurso no encontrado" });
     if (req.query.includeFile === "true")
       r.tempFileUrl = await getTempLink(r.filePath);
+
     return res.json({ success: true, resource: r });
   } catch (e) {
     next(e);
