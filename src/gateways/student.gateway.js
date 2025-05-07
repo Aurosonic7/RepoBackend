@@ -69,16 +69,14 @@ export async function updateStudentById(id, { name, isActive, idCareer }) {
       fields.push("idCareer = ?");
       params.push(idCareer);
     }
-    if (fields.length === 0) return await selectStudentById(id);
+    if (!fields.length) return await selectStudentById(id);
     params.push(id);
     const [result] = await conn.query(
-      `UPDATE Student
-            SET ${fields.join(", ")}
-            WHERE idStudent = ?`,
+      `UPDATE Student SET ${fields.join(", ")} WHERE idStudent = ?`,
       params
     );
     if (result.affectedRows === 0) return null;
-    return result.affectedRows > 0;
+    return await selectStudentById(id);
   } finally {
     closeConnection(conn);
   }
@@ -86,12 +84,12 @@ export async function updateStudentById(id, { name, isActive, idCareer }) {
 export async function deleteStudentById(id) {
   const conn = await openConnection();
   try {
-    const [result] = await conn.query(
-      `DELETE FROM Student
-            WHERE idStudent = ?`,
-      [id]
-    );
-    return result.affectedRows > 0;
+    const student = await selectStudentById(id);
+
+    if (!student) return null;
+
+    await conn.query(`DELETE FROM Student WHERE idStudent = ?`, [id]);
+    return student;
   } finally {
     closeConnection(conn);
   }
