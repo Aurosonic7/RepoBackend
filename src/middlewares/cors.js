@@ -3,7 +3,8 @@ import cors from "cors";
 const allowedOrigins = [
   // Origen principal de la aplicación frontend
   `http://0.0.0.0:${process.env.PORT_FRONT || 3000}`,
-  // Agrega otros orígenes si es necesario
+  // Origen de desarrollo en React/Vite
+  "http://localhost:5173",
 ];
 
 const corsOptions = {
