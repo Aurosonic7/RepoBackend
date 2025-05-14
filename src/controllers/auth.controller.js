@@ -65,10 +65,10 @@ export async function login(req, res, next) {
     res
       .cookie("token", token, {
         httpOnly: true,
-        secure: true, // Obligatorio para SameSite=None
+        secure: process.env.NODE_ENV === "production",
         sameSite: "none", // Permite cross-site
         partitioned: true, // Nuevo atributo para privacidad
-        domain: ".render.com", // Dominio padre compartido
+        domain: process.env.BACK_DOMAIN,
         maxAge: 8 * 60 * 60 * 1000,
       })
       .json({
@@ -136,6 +136,7 @@ export function logout(req, res) {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "none",
+      domain: process.env.BACK_DOMAIN,
     })
     .json({ success: true, message: "Logout exitoso" });
 }
