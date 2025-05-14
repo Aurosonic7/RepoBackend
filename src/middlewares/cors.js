@@ -1,9 +1,6 @@
 import cors from "cors";
 
-const allowedOrigins = [
-  // Origen principal de la aplicación frontend
-  `https://${process.env.FRONT_URL}`,
-];
+const allowedOrigins = ["*"];
 
 const corsOptions = {
   origin: (origin, callback) => {
