@@ -7,7 +7,7 @@ export default function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
 
   //! Obtener token de Authorization header (Bearer)
-  if (authHeader && authHeader.startsWith("Bearer ")) {
+  if (authHeader && authHeader.startsWith("Bearer")) {
     token = authHeader.slice(7);
   }
   //! Fallback: obtener token de cookies si existe
