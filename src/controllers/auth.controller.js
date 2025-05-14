@@ -68,7 +68,7 @@ export async function login(req, res, next) {
         secure: true, // Obligatorio para SameSite=None
         sameSite: "none", // Permite cross-site
         partitioned: true, // Nuevo atributo para privacidad
-        domain: "https://repo-web.onrender.com/", // Dominio padre compartido
+        domain: ".render.com", // Dominio padre compartido
         maxAge: 8 * 60 * 60 * 1000,
       })
       .json({
