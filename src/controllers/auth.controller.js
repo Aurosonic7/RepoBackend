@@ -67,6 +67,7 @@ export async function login(req, res, next) {
         httpOnly: true,
         secure: true,
         sameSite: "none",
+        domain: ".render.com",
         maxAge: 8 * 60 * 60 * 1000,
       })
       .json({
@@ -133,6 +134,7 @@ export function logout(req, res) {
     .clearCookie("token", {
       httpOnly: true,
       secure: true,
+      domain: ".render.com",
       sameSite: "none",
     })
     .json({ success: true, message: "Logout exitoso" });

@@ -1,16 +1,12 @@
 import cors from "cors";
 
-const allowedOrigins = ["*"];
+const allowedOrigins = [
+  "https://repo-web.onrender.com",  // Tu frontend en producción
+  "http://localhost:5173"
+];
 
 const corsOptions = {
-  origin: (origin, callback) => {
-    // Permite solicitudes sin origen (como Postman) o orígenes en la lista
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Origen CORS no permitido"));
-    }
-  },
+  origin: allowedOrigins,
   credentials: true,
   optionsSuccessStatus: 200,
 };
