@@ -67,7 +67,7 @@ export async function login(req, res, next) {
         httpOnly: true,
         secure: true,
         sameSite: "none",
-        //domain: "onrender.com",
+        domain: ".onrender.com",
         maxAge: 8 * 60 * 60 * 1000,
       })
       .json({
@@ -87,44 +87,27 @@ export async function login(req, res, next) {
 
 export const verifyToken = async (req, res, next) => {
   try {
-    const { token } = req.cookies;
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "No se proporcionó token",
-      });
+    if (!req.user) {
+      return res.status(401).json({ success: false });
     }
-
-    jwt.verify(token, config.app.jwtSecret, async (error, user) => {
-      if (error) {
-        return res.status(401).json({
-          success: false,
-          message: "Token inválido o caducado",
-        });
+    
+    // Verificar que el usuario aún existe en la base de datos
+    const userFound = await findUserByEmail(req.user.email);
+    if (!userFound) {
+      return res.status(401).json({ success: false, message: "Usuario no encontrado" });
+    }
+    
+    res.json({ 
+      success: true,
+      user: {
+        idUser: userFound.idUser,
+        name: userFound.name,
+        email: userFound.email,
+        rol: userFound.rol,
       }
-
-      const userFound = await findUserByEmail(user.email || "");
-      if (!userFound || !userFound.isActive) {
-        return res.status(401).json({
-          success: false,
-          message: "Usuario no encontrado o inactivo",
-        });
-      }
-
-      return res.json({
-        success: true,
-        user: {
-          idUser: userFound.idUser,
-          name: userFound.name,
-          email: userFound.email,
-          rol: userFound.rol,
-        },
-      });
     });
   } catch (err) {
-    logger.error(`Error en verifyToken: ${err.stack || err}`);
-    return next(err);
+    next(err);
   }
 };
 
@@ -134,7 +117,7 @@ export function logout(req, res) {
     .clearCookie("token", {
       httpOnly: true,
       secure: true,
-      //domain: "onrender.com",
+      domain: ".onrender.com",
       sameSite: "none",
     })
     .json({ success: true, message: "Logout exitoso" });

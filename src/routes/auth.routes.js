@@ -35,6 +35,6 @@ router.post(
 );
 
 router.post("/logout", authenticateToken, logout);
-router.get("/verify", verifyToken);
+router.get("/verify", authenticateToken, verifyToken);
 
 export default router;
