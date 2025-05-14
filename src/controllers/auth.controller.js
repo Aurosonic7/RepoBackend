@@ -65,10 +65,8 @@ export async function login(req, res, next) {
     res
       .cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "none", // Permite cross-site
-        partitioned: true, // Nuevo atributo para privacidad
-        domain: process.env.BACK_DOMAIN,
+        secure: true,
+        sameSite: "none",
         maxAge: 8 * 60 * 60 * 1000,
       })
       .json({
@@ -133,10 +131,9 @@ export function logout(req, res) {
   // 1) Limpia la cookie 'token'
   res
     .clearCookie("token", {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      secure: true,
       sameSite: "none",
-      domain: process.env.BACK_DOMAIN,
     })
     .json({ success: true, message: "Logout exitoso" });
 }
