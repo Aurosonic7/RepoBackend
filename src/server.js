@@ -31,7 +31,7 @@ const app = express();
 //? ─── Middlewares ────────────────────────────────────────────────────────────────
 app.use(corsMiddleware);
 app.use(securityMiddleware);
-app.use(rateLimiter);
+//! app.use(rateLimiter);
 app.use(cookieParser());
 app.use(compressionMiddleware);
 app.use(requestIdMiddleware);
