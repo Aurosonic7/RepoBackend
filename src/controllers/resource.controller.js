@@ -125,9 +125,10 @@ export async function getResourceById(req, res, next) {
       return res
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
-    if (req.query.includeFile === "true")
+    if (req.query.includeFile === "true") {
       r.tempFileUrl = await getTempLink(r.filePath);
-
+      r.tempImageUrl = await getTempLink(r.imagePath);
+    }
     return res.json({ success: true, resource: r });
   } catch (e) {
     next(e);

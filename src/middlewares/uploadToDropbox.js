@@ -2,28 +2,40 @@ import crypto from "node:crypto";
 import { uploadBuffer, getTempLink } from "../utils/dropbox.js";
 
 export async function uploadToDropbox(req, _res, next) {
-  if (!req.file) return next();
+  const filesMap = req.files;
+  // Esperamos req.files.file y req.files.image
+  if (!filesMap || !filesMap.file || !filesMap.image) {
+    return next();
+  }
 
   try {
-    /* 1) Hash SHA‑256 → nombre de archivo único y determinístico */
-    const hash = crypto
-      .createHash("sha256")
-      .update(req.file.buffer)
-      .digest("hex");
-    const ext = req.file.originalname.split(".").pop()?.toLowerCase() || "bin";
-    const path = `/files/${hash}.${ext}`; // carpeta fija
+    // Itera sobre los dos campos, pero podrías generalizar
+    for (const field of ["file", "image"]) {
+      // multer.fields siempre devuelve arrays
+      const arr = filesMap[field];
+      if (!arr || !arr.length) continue;
 
-    /* 2) Comprueba si ya existe pidiendo un link temporal.
-          Si falla, lo sube; si no, reutiliza. */
-    let tempLink;
-    try {
-      tempLink = await getTempLink(path); // existe – sólo link
-    } catch {
-      tempLink = await uploadBuffer(req.file.buffer, path); // se acaba de subir
+      const file = arr[0];
+      // 1) Hash + extensión
+      const hash = crypto
+        .createHash("sha256")
+        .update(file.buffer)
+        .digest("hex");
+      const ext = file.originalname.split(".").pop()?.toLowerCase() || "bin";
+      const path = `/files/${hash}.${ext}`;
+
+      // 2) Intenta obtener link temporal
+      let tmp;
+      try {
+        tmp = await getTempLink(path);
+      } catch {
+        // si no existe, lo sube y luego link
+        tmp = await uploadBuffer(file.buffer, path);
+      }
+
+      // 3) Guarda info para el controller
+      file.dropbox = { path, tmp, hash };
     }
-
-    /* 3) Guarda la info para que el controller la use */
-    req.file.dropbox = { path, tmp: tempLink, hash };
     return next();
   } catch (err) {
     return next(err); // lo atrapará tu errorHandler
