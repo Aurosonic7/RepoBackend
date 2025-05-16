@@ -64,10 +64,9 @@ export async function login(req, res, next) {
     // 4) Enviar cookie con el token (no lo devolvemos en JSON)
     res
       .cookie("token", token, {
-        httpOnly: true,
+        httpOnly: false,
         secure: true,
         sameSite: "none",
-        domain: ".onrender.com",
         maxAge: 8 * 60 * 60 * 1000,
       })
       .json({
@@ -115,10 +114,9 @@ export function logout(req, res) {
   // 1) Limpia la cookie 'token'
   res
     .clearCookie("token", {
-      httpOnly: true,
-      secure: true,
-      domain: ".onrender.com",
-      sameSite: "none",
+        httpOnly: false,
+        secure: true,
+        sameSite: "none",
     })
     .json({ success: true, message: "Logout exitoso" });
 }
