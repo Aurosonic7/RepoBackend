@@ -101,20 +101,38 @@ export async function createResource(req, res, next) {
 }
 
 /* ─────────────── GETs ─────────────── */
+/* ─────────────── GET /api/resources ─────────────── */
 export async function getResources(req, res, next) {
   try {
     const list = await selectAllResources();
+
     if (req.query.includeFile === "true") {
       await Promise.all(
         list.map(async (r) => {
-          r.tempFileUrl = await getTempLink(r.filePath);
-          r.tempImageUrl = await getTempLink(r.imagePath);
+          // ⬇️ Archivo principal
+          try {
+            if (r.filePath?.startsWith("/files/")) {
+              r.tempFileUrl = await getTempLink(r.filePath);
+            }
+          } catch {
+            r.tempFileUrl = null;
+          }
+
+          // ⬇️ Imagen de portada
+          try {
+            if (r.imagePath?.startsWith("/files/")) {
+              r.tempImageUrl = await getTempLink(r.imagePath);
+            }
+          } catch {
+            r.tempImageUrl = null;
+          }
         })
       );
     }
+
     return res.json({ success: true, resources: list });
   } catch (e) {
-    next(e);
+    next(e); // llegará a tu errorHandler
   }
 }
 
@@ -126,8 +144,12 @@ export async function getResourceById(req, res, next) {
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
     if (req.query.includeFile === "true") {
-      r.tempFileUrl = await getTempLink(r.filePath);
-      r.tempImageUrl = await getTempLink(r.imagePath);
+      try {
+        r.tempFileUrl = await getTempLink(r.filePath);
+      } catch {}
+      try {
+        r.tempImageUrl = await getTempLink(r.imagePath);
+      } catch {}
     }
     return res.json({ success: true, resource: r });
   } catch (e) {
