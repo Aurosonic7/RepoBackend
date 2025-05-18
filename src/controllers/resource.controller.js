@@ -109,20 +109,16 @@ export async function getResources(req, res, next) {
     if (req.query.includeFile === "true") {
       await Promise.all(
         list.map(async (r) => {
-          // ⬇️ Archivo principal
           try {
-            if (r.filePath?.startsWith("/files/")) {
-              r.tempFileUrl = await getTempLink(r.filePath);
-            }
+            if (r.filePath?.startsWith("/files/"))
+              r.tempFileUrl = await getTempLink(r.filePath); // PDF
           } catch {
             r.tempFileUrl = null;
           }
 
-          // ⬇️ Imagen de portada
           try {
-            if (r.imagePath?.startsWith("/files/")) {
-              r.tempImageUrl = await getTempLink(r.imagePath, true);
-            }
+            if (r.imagePath?.startsWith("/files/"))
+              r.tempImageUrl = await getTempLink(r.imagePath, true); // IMG raw
           } catch {
             r.tempImageUrl = null;
           }
@@ -144,12 +140,23 @@ export async function getResourceById(req, res, next) {
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
     if (req.query.includeFile === "true") {
-      try {
-        r.tempFileUrl = await getTempLink(r.filePath);
-      } catch {}
-      try {
-        r.tempImageUrl = await getTempLink(r.imagePath, true);
-      } catch {}
+      await Promise.all(
+        list.map(async (r) => {
+          try {
+            if (r.filePath?.startsWith("/files/"))
+              r.tempFileUrl = await getTempLink(r.filePath); // PDF
+          } catch {
+            r.tempFileUrl = null;
+          }
+
+          try {
+            if (r.imagePath?.startsWith("/files/"))
+              r.tempImageUrl = await getTempLink(r.imagePath, true); // IMG raw
+          } catch {
+            r.tempImageUrl = null;
+          }
+        })
+      );
     }
     return res.json({ success: true, resource: r });
   } catch (e) {

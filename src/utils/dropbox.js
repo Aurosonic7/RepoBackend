@@ -4,7 +4,7 @@ import { Dropbox } from "dropbox";
 const dbx = new Dropbox({ accessToken: process.env.DROPBOX_TOKEN });
 
 // 👇  nombre EXACTO de tu App Folder
-const APP_FOLDER = "/repobackend"; // <- cámbialo si tu carpeta se llama distinto
+const APP_FOLDER = "/"; // <- cámbialo si tu carpeta se llama distinto
 
 /** Asegura que la ruta incluya la carpeta de la app */
 function withAppFolder(path) {
@@ -24,10 +24,13 @@ export async function uploadBuffer(buffer, path) {
   return result.link + "&raw=1";
 }
 
-export async function getTempLink(path) {
-  path = withAppFolder(path);
+export async function getTempLink(path, asRaw = false) {
   const { result } = await dbx.filesGetTemporaryLink({ path });
-  return result.link + "&raw=1"; // ⬅️ link directo (raw)
+
+  if (!asRaw) return result.link;
+
+  const sep = result.link.includes("?") ? "&" : "?";
+  return `${result.link}${sep}raw=1`;
 }
 
 export async function safeDelete(path) {
