@@ -17,7 +17,6 @@ const router = Router();
 
 router.post(
   "/",
-  authenticateToken,
   upload.fields([
     { name: "file", maxCount: 1 },
     { name: "image", maxCount: 1 },
