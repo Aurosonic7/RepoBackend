@@ -17,7 +17,16 @@ export async function uploadBuffer(buffer, path) {
 /** Obtiene un link temporal para un path ya existente */
 export async function getTempLink(path) {
   const { result } = await dbx.filesGetTemporaryLink({ path });
-  return result.link; // expira en ≈4 h
+  let link = result.link; // termina en …?dl=0
+
+  if (
+    raw &&
+    /\.(png|jpe?g)$/i.test(path) && // sólo para imágenes “portada”
+    link.endsWith("?dl=0")
+  ) {
+    link = link.replace("?dl=0", "?raw=1");
+  }
+  return link;
 }
 
 /** Elimina el fichero de Dropbox (ignora cualquier fallo) */

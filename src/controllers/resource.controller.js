@@ -121,7 +121,7 @@ export async function getResources(req, res, next) {
           // ⬇️ Imagen de portada
           try {
             if (r.imagePath?.startsWith("/files/")) {
-              r.tempImageUrl = await getTempLink(r.imagePath);
+              r.tempImageUrl = await getTempLink(r.imagePath, true);
             }
           } catch {
             r.tempImageUrl = null;
@@ -148,7 +148,7 @@ export async function getResourceById(req, res, next) {
         r.tempFileUrl = await getTempLink(r.filePath);
       } catch {}
       try {
-        r.tempImageUrl = await getTempLink(r.imagePath);
+        r.tempImageUrl = await getTempLink(r.imagePath, true);
       } catch {}
     }
     return res.json({ success: true, resource: r });
