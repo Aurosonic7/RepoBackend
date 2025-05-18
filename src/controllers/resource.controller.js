@@ -22,18 +22,20 @@ export async function createResource(req, res, next) {
   const original = req.files?.file?.[0];
   const previewIMG = req.files?.image?.[0];
 
-  if (!original?.dropbox || !previewIMG?.dropbox)
+  if (!original?.dropbox || !previewIMG?.dropbox) {
     return res.status(400).json({
       success: false,
       message: "Se requieren archivos: 'file' and 'image'",
     });
+  }
 
   /* –– asegurar que la imagen sea png | jpg | jpeg –– */
-  if (!/^image\/(png|jpe?g)$/i.test(previewIMG.mimetype))
+  if (!/^image\/(png|jpe?g)$/i.test(previewIMG.mimetype)) {
     return res.status(400).json({
       success: false,
       message: "La imagen debe ser PNG, JPG o JPEG",
     });
+  }
 
   const {
     title,
@@ -69,7 +71,7 @@ export async function createResource(req, res, next) {
       conn
     );
 
-    /* 2) Mongo – solo el archivo principal */
+    /* 2) Mongo – solo el archivo principal */
     await FileModel.create({
       id_recurso: newResource.idResource,
       archivo: original.originalname,
@@ -100,8 +102,7 @@ export async function createResource(req, res, next) {
   }
 }
 
-/* ─────────────── GETs ─────────────── */
-/* GET  /api/resources ---------------------------------------------------- */
+/* ─────────────── GET /api/resources ─────────────── */
 export async function getResources(req, res, next) {
   try {
     const list = await selectAllResources();
@@ -109,17 +110,18 @@ export async function getResources(req, res, next) {
     if (req.query.includeFile === "true") {
       await Promise.all(
         list.map(async (r) => {
-          // -- enlace para DESCARGA --------------------------
-          if (r.filePath?.startsWith("/files/"))
+          /* enlace de descarga (PDF, DOC, etc.) */
+          if (r.filePath?.startsWith("/files/")) {
             try {
               r.tempFileUrl = await getTempLink(r.filePath);
             } catch {}
-
-          // -- enlace RAW para portada -----------------------
-          if (r.imagePath?.startsWith("/files/"))
+          }
+          /* enlace raw para portada (IMG) */
+          if (r.imagePath?.startsWith("/files/")) {
             try {
               r.tempImageUrl = await getTempLink(r.imagePath, true);
             } catch {}
+          }
         })
       );
     }
@@ -130,22 +132,25 @@ export async function getResources(req, res, next) {
   }
 }
 
-/* GET /api/resources/:id ------------------------------------------------- */
+/* ─────────────── GET /api/resources/:id ─────────────── */
 export async function getResourceById(req, res, next) {
   try {
     const r = await selectActiveResourceById(+req.params.id);
-    if (!r)
+    if (!r) {
       return res.status(404).json({ success: false, message: "No encontrado" });
+    }
 
     if (req.query.includeFile === "true") {
-      if (r.filePath?.startsWith("/files/"))
+      if (r.filePath?.startsWith("/files/")) {
         try {
           r.tempFileUrl = await getTempLink(r.filePath);
         } catch {}
-      if (r.imagePath?.startsWith("/files/"))
+      }
+      if (r.imagePath?.startsWith("/files/")) {
         try {
           r.tempImageUrl = await getTempLink(r.imagePath, true);
         } catch {}
+      }
     }
 
     res.json({ success: true, resource: r });
@@ -154,16 +159,18 @@ export async function getResourceById(req, res, next) {
   }
 }
 
-/* ─────────────── PUT /resources/:id ─────────────── */
+/* ─────────────── PUT /api/resources/:id ─────────────── */
 export async function updateResource(req, res, next) {
   try {
     const body = { ...req.body };
     if (req.file?.dropbox) body.filePath = req.file.dropbox.path;
+
     const up = await updateResourceById(+req.params.id, body);
-    if (!up)
+    if (!up) {
       return res
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
+    }
     res.json({ success: true, resource: up });
   } catch (e) {
     next(e);
@@ -174,55 +181,55 @@ export async function updateResource(req, res, next) {
 export async function disableResource(req, res, next) {
   try {
     const id = +req.params.id;
-    /* ¿existe?  */
     const current = await selectResourceById(id);
-    if (!current)
+    if (!current) {
       return res
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
-    /* ya inactivo ⇒ nada que hacer  */
-    if (!current.isActive)
+    }
+    if (!current.isActive) {
       return res.json({
         success: true,
         message: "Recurso ya estaba deshabilitado",
       });
-    /* soft‑delete en MySQL  */
+    }
+
     await softDeleteResourceById(id);
-    /* marca en Mongo  */
     await FileModel.updateMany(
       { id_recurso: id },
       { $set: { eliminado: true, fecha_eliminado: new Date() } }
     );
-    return res.json({ success: true, message: "Recurso deshabilitado" });
+
+    res.json({ success: true, message: "Recurso deshabilitado" });
   } catch (e) {
     next(e);
   }
 }
 
-/* ───────────── PATCH /api/resources/:id/enable ───── */
+/* ─────────────── PATCH /resources/:id/enable ───── */
 export async function enableResource(req, res, next) {
   try {
     const id = +req.params.id;
-    /* ¿existe? */
     const current = await selectResourceById(id);
-    if (!current)
+    if (!current) {
       return res
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
-    /* ya activo */
-    if (current.isActive)
+    }
+    if (current.isActive) {
       return res.json({
         success: true,
         message: "Recurso ya estaba habilitado",
       });
-    /* reactiva en MySQL  */
+    }
+
     await enableResourceById(id);
-    /* des‑marca en Mongo  */
     await FileModel.updateMany(
       { id_recurso: id },
       { $set: { eliminado: false }, $unset: { fecha_eliminado: 1 } }
     );
-    return res.json({ success: true, message: "Recurso habilitado" });
+
+    res.json({ success: true, message: "Recurso habilitado" });
   } catch (err) {
     next(err);
   }
@@ -232,28 +239,32 @@ export async function enableResource(req, res, next) {
 export async function forceDeleteResource(req, res, next) {
   const id = +req.params.id;
   const doc = await FileModel.findOne({ id_recurso: id });
-  if (!doc)
+  if (!doc) {
     return res
       .status(404)
       .json({ success: false, message: "Recurso no encontrado" });
+  }
 
   try {
     await safeDelete(doc.dropbox_path);
     await FileModel.deleteOne({ _id: doc._id });
+
     const ok = await hardDeleteResourceById(id);
     if (!ok) throw new Error("No se pudo eliminar en MySQL");
+
     res.json({ success: true, message: "Recurso eliminado definitivamente" });
   } catch (e) {
     next(e);
   }
 }
 
-/* ─────────────── EXTRA (fac‑career) ─────────────── */
+/* ─────────────── EXTRA (fac-career) ─────────────── */
 export async function getFacultyAndCareerResource(req, res, next) {
   try {
     const d = await getFacultyAndCareerByResource(+req.params.id);
-    if (!d)
+    if (!d) {
       return res.status(404).json({ success: false, message: "No encontrado" });
+    }
     res.json({ success: true, data: d });
   } catch (e) {
     next(e);
