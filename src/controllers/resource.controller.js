@@ -18,24 +18,20 @@ import { safeDelete, getTempLink } from "../utils/dropbox.js";
 
 /* ─────────────── POST /api/resources ─────────────── */
 export async function createResource(req, res, next) {
-  /* -------- validación de archivos ---------- */
   const original = req.files?.file?.[0];
   const previewIMG = req.files?.image?.[0];
 
-  if (!original?.dropbox || !previewIMG?.dropbox) {
+  if (!original?.dropbox || !previewIMG?.dropbox)
     return res.status(400).json({
       success: false,
       message: "Se requieren archivos: 'file' and 'image'",
     });
-  }
 
-  /* –– asegurar que la imagen sea png | jpg | jpeg –– */
-  if (!/^image\/(png|jpe?g)$/i.test(previewIMG.mimetype)) {
+  if (!/^image\/(png|jpe?g)$/i.test(previewIMG.mimetype))
     return res.status(400).json({
       success: false,
       message: "La imagen debe ser PNG, JPG o JPEG",
     });
-  }
 
   const {
     title,
@@ -53,7 +49,6 @@ export async function createResource(req, res, next) {
   try {
     await conn.beginTransaction();
 
-    /* 1) MySQL */
     const newResource = await insertResource(
       {
         title,
@@ -71,7 +66,6 @@ export async function createResource(req, res, next) {
       conn
     );
 
-    /* 2) Mongo – solo el archivo principal */
     await FileModel.create({
       id_recurso: newResource.idResource,
       archivo: original.originalname,
@@ -91,7 +85,7 @@ export async function createResource(req, res, next) {
     });
 
     await conn.commit();
-    return res.status(201).json({ success: true, resource: newResource });
+    res.status(201).json({ success: true, resource: newResource });
   } catch (err) {
     await conn.rollback();
     await safeDelete(original.dropbox.path);
@@ -102,57 +96,47 @@ export async function createResource(req, res, next) {
   }
 }
 
-/* ─────────────── GET /api/resources ─────────────── */
+/* GET /api/resources -------------------------------------------- */
 export async function getResources(req, res, next) {
   try {
     const list = await selectAllResources();
-
     if (req.query.includeFile === "true") {
       await Promise.all(
         list.map(async (r) => {
-          /* enlace de descarga (PDF, DOC, etc.) */
-          if (r.filePath?.startsWith("/files/")) {
+          if (r.filePath?.startsWith("/files/"))
             try {
               r.tempFileUrl = await getTempLink(r.filePath);
             } catch {}
-          }
-          /* enlace raw para portada (IMG) */
-          if (r.imagePath?.startsWith("/files/")) {
+          if (r.imagePath?.startsWith("/files/"))
             try {
               r.tempImageUrl = await getTempLink(r.imagePath, true);
             } catch {}
-          }
         })
       );
     }
-
     res.json({ success: true, resources: list });
   } catch (err) {
     next(err);
   }
 }
 
-/* ─────────────── GET /api/resources/:id ─────────────── */
+/* GET /api/resources/:id ---------------------------------------- */
 export async function getResourceById(req, res, next) {
   try {
     const r = await selectActiveResourceById(+req.params.id);
-    if (!r) {
+    if (!r)
       return res.status(404).json({ success: false, message: "No encontrado" });
-    }
 
     if (req.query.includeFile === "true") {
-      if (r.filePath?.startsWith("/files/")) {
+      if (r.filePath?.startsWith("/files/"))
         try {
           r.tempFileUrl = await getTempLink(r.filePath);
         } catch {}
-      }
-      if (r.imagePath?.startsWith("/files/")) {
+      if (r.imagePath?.startsWith("/files/"))
         try {
           r.tempImageUrl = await getTempLink(r.imagePath, true);
         } catch {}
-      }
     }
-
     res.json({ success: true, resource: r });
   } catch (err) {
     next(err);
