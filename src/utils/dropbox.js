@@ -1,18 +1,23 @@
 // utils/dropbox.js
 import { Dropbox } from "dropbox";
+export const dbx = new Dropbox({ accessToken: process.env.DROPBOX_TOKEN });
 
-const dbx = new Dropbox({ accessToken: process.env.DROPBOX_TOKEN });
+/**
+ * Devuelve link temporal (≈4 h).
+ *  - para download → asRaw = false
+ *  - para <img>     → asRaw = true   (añade ?raw=1 ó &raw=1)
+ */
+export async function getTempLink(path, asRaw = false) {
+  const { result } = await dbx.filesGetTemporaryLink({ path });
 
-// 👇  nombre EXACTO de tu App Folder
-const APP_FOLDER = "/"; // <- cámbialo si tu carpeta se llama distinto
+  if (!asRaw) return result.link; // descarga ⬇️
 
-/** Asegura que la ruta incluya la carpeta de la app */
-function withAppFolder(path) {
-  return path.startsWith(APP_FOLDER) ? path : APP_FOLDER + path;
+  const sep = result.link.includes("?") ? "&" : "?";
+  return `${result.link}${sep}raw=1`; // embebido ⬅️
 }
 
+/** Sube un buffer y devuelve link temporal de descarga */
 export async function uploadBuffer(buffer, path) {
-  path = withAppFolder(path);
   await dbx.filesUpload({
     path,
     contents: buffer,
@@ -21,21 +26,12 @@ export async function uploadBuffer(buffer, path) {
     mute: true,
   });
   const { result } = await dbx.filesGetTemporaryLink({ path });
-  return result.link + "&raw=1";
-}
-
-export async function getTempLink(path, asRaw = false) {
-  const { result } = await dbx.filesGetTemporaryLink({ path });
-
-  if (!asRaw) return result.link;
-
-  const sep = result.link.includes("?") ? "&" : "?";
-  return `${result.link}${sep}raw=1`;
+  return result.link; // sin raw
 }
 
 export async function safeDelete(path) {
   try {
-    await dbx.filesDeleteV2({ path: withAppFolder(path) });
+    await dbx.filesDeleteV2({ path });
   } catch {
     /* ignore */
   }

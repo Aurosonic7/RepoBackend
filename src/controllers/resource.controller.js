@@ -101,7 +101,7 @@ export async function createResource(req, res, next) {
 }
 
 /* ─────────────── GETs ─────────────── */
-/* ─────────────── GET /api/resources ─────────────── */
+/* GET  /api/resources ---------------------------------------------------- */
 export async function getResources(req, res, next) {
   try {
     const list = await selectAllResources();
@@ -109,58 +109,48 @@ export async function getResources(req, res, next) {
     if (req.query.includeFile === "true") {
       await Promise.all(
         list.map(async (r) => {
-          try {
-            if (r.filePath?.startsWith("/files/"))
-              r.tempFileUrl = await getTempLink(r.filePath); // PDF
-          } catch {
-            r.tempFileUrl = null;
-          }
+          // -- enlace para DESCARGA --------------------------
+          if (r.filePath?.startsWith("/files/"))
+            try {
+              r.tempFileUrl = await getTempLink(r.filePath);
+            } catch {}
 
-          try {
-            if (r.imagePath?.startsWith("/files/"))
-              r.tempImageUrl = await getTempLink(r.imagePath, true); // IMG raw
-          } catch {
-            r.tempImageUrl = null;
-          }
+          // -- enlace RAW para portada -----------------------
+          if (r.imagePath?.startsWith("/files/"))
+            try {
+              r.tempImageUrl = await getTempLink(r.imagePath, true);
+            } catch {}
         })
       );
     }
 
-    return res.json({ success: true, resources: list });
-  } catch (e) {
-    next(e); // llegará a tu errorHandler
+    res.json({ success: true, resources: list });
+  } catch (err) {
+    next(err);
   }
 }
 
+/* GET /api/resources/:id ------------------------------------------------- */
 export async function getResourceById(req, res, next) {
   try {
     const r = await selectActiveResourceById(+req.params.id);
     if (!r)
-      return res
-        .status(404)
-        .json({ success: false, message: "Recurso no encontrado" });
-    if (req.query.includeFile === "true") {
-      await Promise.all(
-        list.map(async (r) => {
-          try {
-            if (r.filePath?.startsWith("/files/"))
-              r.tempFileUrl = await getTempLink(r.filePath); // PDF
-          } catch {
-            r.tempFileUrl = null;
-          }
+      return res.status(404).json({ success: false, message: "No encontrado" });
 
-          try {
-            if (r.imagePath?.startsWith("/files/"))
-              r.tempImageUrl = await getTempLink(r.imagePath, true); // IMG raw
-          } catch {
-            r.tempImageUrl = null;
-          }
-        })
-      );
+    if (req.query.includeFile === "true") {
+      if (r.filePath?.startsWith("/files/"))
+        try {
+          r.tempFileUrl = await getTempLink(r.filePath);
+        } catch {}
+      if (r.imagePath?.startsWith("/files/"))
+        try {
+          r.tempImageUrl = await getTempLink(r.imagePath, true);
+        } catch {}
     }
-    return res.json({ success: true, resource: r });
-  } catch (e) {
-    next(e);
+
+    res.json({ success: true, resource: r });
+  } catch (err) {
+    next(err);
   }
 }
 
