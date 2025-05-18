@@ -1,3 +1,4 @@
+// ─── controllers/resource.controller.js ──────────────────────────────
 import FileModel from "../models/file.model.js";
 import {
   insertResource,
@@ -15,24 +16,36 @@ import {
   closeConnection,
 } from "../../config/databases/mysql.js";
 import { safeDelete, getTempLink } from "../utils/dropbox.js";
+import logger from "../utils/errorHandler.js"; //  <-- para log interno
 
 /* ─────────────── POST /api/resources ─────────────── */
 export async function createResource(req, res, next) {
-  const original = req.files?.file?.[0];
-  const previewIMG = req.files?.image?.[0];
-
-  if (!original?.dropbox || !previewIMG?.dropbox)
+  // ── 1)  ¿llegaron los archivos? ──────────────────────────────
+  if (!req.files || !req.files.file || !req.files.image) {
+    logger.warn("createResource: req.files presente pero sin 'file' o 'image'");
     return res.status(400).json({
       success: false,
-      message: "Se requieren archivos: 'file' and 'image'",
+      message: "Se requieren dos campos tipo File llamados 'file' y 'image'",
+    });
+  }
+
+  const original = req.files.file[0]; // PDF/imagen principal
+  const previewIMG = req.files.image[0]; // portada
+
+  if (!original.dropbox || !previewIMG.dropbox)
+    return res.status(400).json({
+      success: false,
+      message: "Error al subir a Dropbox; inténtalo de nuevo",
     });
 
+  // ── 2)  la portada sólo acepta png / jpg / jpeg ───────────────
   if (!/^image\/(png|jpe?g)$/i.test(previewIMG.mimetype))
     return res.status(400).json({
       success: false,
-      message: "La imagen debe ser PNG, JPG o JPEG",
+      message: "La portada debe ser PNG, JPG o JPEG",
     });
 
+  // ── 3)  datos de formulario ──────────────────────────────────
   const {
     title,
     description,
@@ -49,6 +62,7 @@ export async function createResource(req, res, next) {
   try {
     await conn.beginTransaction();
 
+    /* 3-A)  Inserta en MySQL */
     const newResource = await insertResource(
       {
         title,
@@ -66,6 +80,7 @@ export async function createResource(req, res, next) {
       conn
     );
 
+    /* 3-B)  Guarda versión 1 en Mongo */
     await FileModel.create({
       id_recurso: newResource.idResource,
       archivo: original.originalname,
