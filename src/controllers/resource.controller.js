@@ -105,6 +105,7 @@ export async function createResource(req, res, next) {
     await conn.rollback();
     await safeDelete(original.dropbox.path);
     await safeDelete(previewIMG.dropbox.path);
+    console.error("CREATE-RESOURCE ERROR →", err);
     next(err);
   } finally {
     closeConnection(conn);
