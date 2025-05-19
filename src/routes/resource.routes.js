@@ -21,6 +21,10 @@ router.post(
     { name: "file", maxCount: 1 },
     { name: "image", maxCount: 1 },
   ]),
+  (req, _res, next) => {
+    console.log("req.files keys ⇒", Object.keys(req.files || {}));
+    next();
+  },
   uploadToDropbox,
   createResource
 );
