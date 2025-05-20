@@ -4,88 +4,123 @@ import {
   selectAllStudents,
   selectStudentById,
   updateStudentById,
-  deleteStudentById,
+  softDeleteStudentById,
+  enableStudentById,
+  hardDeleteStudentById,
   getFacultyAndCareerByStudent,
 } from "../gateways/student.gateway.js";
 
+/* create ---------------------------------------------------- */
 export async function createStudent(req, res, next) {
   try {
-    const { name, isActive, idCareer } = req.body;
-    const newStudent = await insertStudent({ name, isActive, idCareer });
-    res.status(201).json({ success: true, student: newStudent });
-  } catch (err) {
-    logger.error(`Error en createStudent: ${err.stack || err}`);
-    next(err);
+    const { name, idCareer } = req.body;
+    const s = await insertStudent({ name, idCareer });
+    res.status(201).json({ success: true, student: s });
+  } catch (e) {
+    logger.error(e);
+    next(e);
   }
 }
 
-export async function getStudents(req, res, next) {
+/* list (todos) ---------------------------------------------- */
+export async function getStudents(_req, res, next) {
   try {
-    const students = await selectAllStudents();
-    res.json({ success: true, students });
-  } catch (err) {
-    logger.error(`Error en getStudents: ${err.stack || err}`);
-    next(err);
+    res.json({ success: true, students: await selectAllStudents() });
+  } catch (e) {
+    logger.error(e);
+    next(e);
   }
 }
 
+/* single (activo) ------------------------------------------ */
 export async function getStudentById(req, res, next) {
   try {
-    const id = Number(req.params.id);
-    const student = await selectStudentById(id);
-    if (!student)
+    const st = await selectStudentById(+req.params.id);
+    if (!st)
       return res
         .status(404)
         .json({ success: false, message: "Estudiante no encontrado" });
-    res.json({ success: true, student });
-  } catch (err) {
-    logger.error(`Error en getStudentById: ${err.stack || err}`);
-    next(err);
+    res.json({ success: true, student: st });
+  } catch (e) {
+    logger.error(e);
+    next(e);
   }
 }
 
+/* update --------------------------------------------------- */
 export async function updateStudent(req, res, next) {
   try {
-    const id = Number(req.params.id);
-    const { name, isActive, idCareer } = req.body;
-    const updated = await updateStudentById(id, { name, isActive, idCareer });
-    if (!updated)
+    const up = await updateStudentById(+req.params.id, req.body);
+    if (!up)
       return res
         .status(404)
         .json({ success: false, message: "Estudiante no encontrado" });
-    res.json({ success: true, student: updated });
-  } catch (err) {
-    logger.error(`Error en updateStudent: ${err.stack || err}`);
-    next(err);
+    res.json({ success: true, student: up });
+  } catch (e) {
+    logger.error(e);
+    next(e);
   }
 }
 
-export async function deleteStudent(req, res, next) {
+/* SOFT-DELETE ---------------------------------------------- */
+export async function disableStudent(req, res, next) {
   try {
-    const id = Number(req.params.id);
-    const deleted = await deleteStudentById(id);
-    if (!deleted)
-      return res
-        .status(404)
-        .json({ success: false, message: "Estudiante no encontrado" });
-    res.json({ success: true, message: "Estudiante eliminado" });
-  } catch (err) {
-    logger.error(`Error en deleteStudent: ${err.stack || err}`);
-    next(err);
+    const ok = await softDeleteStudentById(+req.params.id);
+    if (!ok)
+      return res.status(404).json({
+        success: false,
+        message: "Estudiante no encontrado o ya inactivo",
+      });
+    res.json({ success: true, message: "Estudiante deshabilitado" });
+  } catch (e) {
+    logger.error(e);
+    next(e);
   }
 }
 
+/* ENABLE ---------------------------------------------------- */
+export async function enableStudent(req, res, next) {
+  try {
+    const ok = await enableStudentById(+req.params.id);
+    if (!ok)
+      return res.status(404).json({
+        success: false,
+        message: "Estudiante no encontrado o ya activo",
+      });
+    res.json({ success: true, message: "Estudiante habilitado" });
+  } catch (e) {
+    logger.error(e);
+    next(e);
+  }
+}
+
+/* HARD-DELETE ---------------------------------------------- */
+export async function forceDeleteStudent(req, res, next) {
+  try {
+    const ok = await hardDeleteStudentById(+req.params.id);
+    if (!ok)
+      return res
+        .status(404)
+        .json({ success: false, message: "Estudiante no encontrado" });
+    res.json({
+      success: true,
+      message: "Estudiante eliminado definitivamente",
+    });
+  } catch (e) {
+    logger.error(e);
+    next(e);
+  }
+}
+
+/* extra ----------------------------------------------------- */
 export async function getFacultyAndCareerStudent(req, res, next) {
   try {
-    const idStudent = Number(req.params.id);
-    const facultyAndCareer = await getFacultyAndCareerByStudent(idStudent);
-    if (!facultyAndCareer)
-      return res
-        .status(404)
-        .json({ success: false, message: "Estudiante no encontrado" });
-    res.json({ success: true, facultyAndCareer });
-  } catch (err) {
-    logger.error(`Error en getFacultyAndCareerByStudent: ${err.stack || err}`);
-    next(err);
+    const d = await getFacultyAndCareerByStudent(+req.params.id);
+    if (!d)
+      return res.status(404).json({ success: false, message: "No encontrado" });
+    res.json({ success: true, facultyAndCareer: d });
+  } catch (e) {
+    logger.error(e);
+    next(e);
   }
 }

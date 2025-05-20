@@ -5,17 +5,23 @@ import {
   getStudents,
   getStudentById,
   updateStudent,
-  deleteStudent,
+  disableStudent,
+  enableStudent,
+  forceDeleteStudent,
   getFacultyAndCareerStudent,
 } from "../controllers/student.controller.js";
 
 const router = Router();
 
 router.post("/", authenticateToken, createStudent);
-router.get("/", getStudents); //! No authentication needed
+router.get("/", getStudents);
 router.get("/:id", authenticateToken, getStudentById);
 router.put("/:id", authenticateToken, updateStudent);
-router.delete("/:id", authenticateToken, deleteStudent);
+
+router.patch("/:id/disable", authenticateToken, disableStudent);
+router.patch("/:id/enable", authenticateToken, enableStudent);
+router.delete("/:id/force", authenticateToken, forceDeleteStudent);
+
 router.get(
   "/faculty-and-career/:id",
   authenticateToken,
