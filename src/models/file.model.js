@@ -14,15 +14,15 @@ const fileSchema = new Schema(
     id_recurso: { type: Number, required: true, index: true },
     archivo: { type: String, required: true },
     tipo: { type: String, enum: ["pdf", "imagen", "video"], required: true },
+    dropbox_path: { type: String, required: true },
+
     eliminado: { type: Boolean, default: false },
     eliminado_por: { type: Number },
     fecha_eliminado: { type: Date },
+
     versiones: { type: [versionSchema], default: [] },
   },
-  {
-    timestamps: true,
-    collection: "files",
-  }
+  { timestamps: true, collection: "files" }
 );
 
 export default model("File", fileSchema);
