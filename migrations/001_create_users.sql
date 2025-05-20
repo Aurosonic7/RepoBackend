@@ -7,5 +7,5 @@ CREATE TABLE
     rol VARCHAR(15) NOT NULL DEFAULT 'revisor',
     isActive BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT UK$EMAIL$USER UNIQUE (email),
-    CONSTRAINT CHK$ROL$USER CHECK (rol IN ('admin', 'director', 'revisor'))
+    CONSTRAINT CHK$ROL$USER CHECK (rol IN ('admin', 'director', 'supervisor', 'revisor'))
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

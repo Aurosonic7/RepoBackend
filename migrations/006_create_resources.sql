@@ -9,12 +9,6 @@ CREATE TABLE
     imagePath VARCHAR(255) NOT NULL,
     idStudent INT NOT NULL,
     idCategory INT NOT NULL,
-    idDirector INT NOT NULL,
-    idRevisor1 INT NOT NULL,
-    idRevisor2 INT NOT NULL,
     FOREIGN KEY (idStudent) REFERENCES Student (idStudent),
-    FOREIGN KEY (idCategory) REFERENCES Category (idCategory),
-    FOREIGN KEY (idDirector) REFERENCES User (idUser),
-    FOREIGN KEY (idRevisor1) REFERENCES User (idUser),
-    FOREIGN KEY (idRevisor2) REFERENCES User (idUser)
+    FOREIGN KEY (idCategory) REFERENCES Category (idCategory)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
