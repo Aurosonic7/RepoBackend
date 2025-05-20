@@ -21,19 +21,27 @@ export async function findResourceByFilePath(filePath) {
 export async function updateResourceById(id, fields, conn = null) {
   const own = !conn;
   if (own) conn = await openConnection();
-  try {
-    if (!Object.keys(fields).length) return null;
 
-    const set = Object.keys(fields)
+  try {
+    if (!Object.keys(fields).length)
+      // nada que hacer
+      return await selectResourceById(id);
+
+    const setSQL = Object.keys(fields)
       .map((k) => `${k} = ?`)
       .join(", ");
     const params = [...Object.values(fields), id];
 
     const [r] = await conn.query(
-      `UPDATE Resource SET ${set} WHERE idResource = ?`,
+      `UPDATE Resource SET ${setSQL} WHERE idResource = ?`,
       params
     );
-    return r.affectedRows ? await selectResourceById(id) : null;
+    if (r.affectedRows === 0) return null;
+    const [rows] = await conn.query(
+      `SELECT * FROM Resource WHERE idResource = ?`,
+      [id]
+    );
+    return rows[0] ?? null;
   } finally {
     if (own) closeConnection(conn);
   }

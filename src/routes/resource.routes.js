@@ -9,6 +9,7 @@ import {
   disableResource,
   enableResource,
   forceDeleteResource,
+  updateResource,
 } from "../controllers/resource.controller.js";
 
 const router = Router();
@@ -28,5 +29,15 @@ router.get("/:id", authenticateToken, getResourceById);
 router.patch("/:id/disable", authenticateToken, disableResource);
 router.patch("/:id/enable", authenticateToken, enableResource);
 router.delete("/:id/force", authenticateToken, forceDeleteResource);
+router.put(
+  "/:id",
+  authenticateToken,
+  upload.fields([
+    { name: "file", maxCount: 1 },
+    { name: "image", maxCount: 1 },
+  ]),
+  uploadToDropbox,
+  updateResource
+);
 
 export default router;

@@ -6,6 +6,7 @@ import {
   softDeleteResourceById,
   enableResourceById,
   hardDeleteResourceById,
+  updateResourceById,
 } from "../gateways/resource.gateway.js";
 import {
   openConnection,
@@ -230,5 +231,96 @@ export async function forceDeleteResource(req, res, next) {
   } catch (err) {
     logger.error(`forceDeleteResource FAILED ⇒ ${err.stack || err}`);
     next(err);
+  }
+}
+
+export async function updateResource(req, res, next) {
+  const id = +req.params.id;
+  const current = await selectResourceById(id);
+  if (!current)
+    return res
+      .status(404)
+      .json({ success: false, message: "Recurso no encontrado" });
+
+  /* ---------- 1.  Campos a modificar ---------------------------------- */
+  const fields = {};
+  const { title, description, datePublication, idStudent, idCategory } =
+    req.body;
+
+  if (title !== undefined) fields.title = title;
+  if (description !== undefined) fields.description = description;
+  if (datePublication !== undefined) fields.datePublication = datePublication;
+  if (idStudent !== undefined) fields.idStudent = +idStudent;
+  if (idCategory !== undefined) fields.idCategory = +idCategory;
+
+  /* ---------- 2.  Sustitución opcional de archivos --------------------- */
+  let newMainFilePath = null;
+  let newCoverImagePath = null;
+
+  const mainFile = req.files?.file?.[0];
+  const coverFile = req.files?.image?.[0];
+
+  if (mainFile?.dropbox) {
+    if (mainFile.dropbox.path !== current.filePath) {
+      // es realmente un archivo distinto
+      newMainFilePath = mainFile.dropbox.path;
+      fields.filePath = newMainFilePath;
+    }
+  }
+  if (coverFile?.dropbox) {
+    if (coverFile.dropbox.path !== current.imagePath) {
+      newCoverImagePath = coverFile.dropbox.path;
+      fields.imagePath = newCoverImagePath;
+    }
+  }
+
+  /* ---------- 3.  Nada que actualizar ------------------------------- */
+  if (!Object.keys(fields).length)
+    return res.json({
+      success: true,
+      resource: current,
+      message: "Sin cambios",
+    });
+
+  /* ---------- 4.  Transacción MySQL + registro Mongo ----------------- */
+  const conn = await openConnection();
+  try {
+    await conn.beginTransaction();
+    const updated = await updateResourceById(id, fields, conn);
+
+    /* (A) si cambió el archivo principal -> versionado en Mongo */
+    if (newMainFilePath) {
+      await FileModel.updateOne(
+        { id_recurso: id, dropbox_path: current.filePath },
+        {
+          $set: { dropbox_path: newMainFilePath },
+          $push: {
+            versiones: {
+              numero: (current.versiones?.length || 0) + 1,
+              cambios: "Archivo sustituido",
+              fecha: new Date(),
+            },
+          },
+        }
+      );
+    }
+
+    await conn.commit();
+
+    /* (B) después de commit borramos en Dropbox los antiguos (ya no se usan) */
+    if (newMainFilePath) await safeDelete(current.filePath);
+    if (newCoverImagePath) await safeDelete(current.imagePath);
+
+    logger.info(`Resource #${id} actualizado`);
+    return res.json({ success: true, resource: updated });
+  } catch (err) {
+    await conn.rollback();
+    // si habíamos subido archivos nuevos los eliminamos para que no queden huérfanos
+    if (newMainFilePath) await safeDelete(newMainFilePath);
+    if (newCoverImagePath) await safeDelete(newCoverImagePath);
+    logger.error(`updateResource FAILED ⇒ ${err.stack || err}`);
+    return next(err);
+  } finally {
+    closeConnection(conn);
   }
 }
