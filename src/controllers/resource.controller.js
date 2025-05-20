@@ -1,6 +1,11 @@
 import {
   insertResource,
   findResourceByFilePath,
+  selectAllActiveResources,
+  selectResourceById,
+  softDeleteResourceById,
+  enableResourceById,
+  hardDeleteResourceById,
 } from "../gateways/resource.gateway.js";
 import {
   openConnection,
@@ -100,5 +105,130 @@ export async function createResource(req, res, next) {
     return next(err);
   } finally {
     closeConnection(conn);
+  }
+}
+/* ─────────────── GET /api/resources ────────────────────────────── */
+export async function getResources(_req, res, next) {
+  try {
+    const list = await selectAllActiveResources();
+    return res.json({ success: true, resources: list });
+  } catch (err) {
+    return next(err);
+  }
+}
+/*────────────────── GET /api/resources/:id ──────────────────────*/
+export async function getResourceById(req, res, next) {
+  try {
+    const id = Number(req.params.id);
+    const rec = await selectResourceById(id);
+    if (!rec)
+      return res
+        .status(404)
+        .json({ success: false, message: "Recurso no encontrado" });
+
+    return res.json({ success: true, resource: rec });
+  } catch (err) {
+    logger.error(`getResourceById FAILED ⇒ ${err.stack || err}`);
+    return next(err);
+  }
+}
+/* ───────── PATCH /api/resources/:id/disable ───────── */
+export async function disableResource(req, res, next) {
+  const id = Number(req.params.id);
+  try {
+    const current = await selectResourceById(id);
+    if (!current) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Recurso no encontrado" });
+    }
+    if (!current.isActive) {
+      return res.json({
+        success: true,
+        message: "Recurso ya estaba deshabilitado",
+      });
+    }
+    await softDeleteResourceById(id); // ← MySQL
+    await FileModel.updateMany(
+      // ← Mongo
+      { id_recurso: id },
+      { $set: { eliminado: true, fecha_eliminado: new Date() } }
+    );
+
+    return res.json({ success: true, message: "Recurso deshabilitado" });
+  } catch (err) {
+    return next(err);
+  }
+}
+/* ───────── PATCH /api/resources/:id/enable ───────── */
+export async function enableResource(req, res, next) {
+  const id = Number(req.params.id);
+
+  try {
+    const current = await selectResourceById(id);
+    if (!current) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Recurso no encontrado" });
+    }
+
+    if (current.isActive) {
+      return res.json({
+        success: true,
+        message: "Recurso ya estaba habilitado",
+      });
+    }
+
+    await enableResourceById(id); // ← MySQL
+    await FileModel.updateMany(
+      // ← Mongo
+      { id_recurso: id },
+      { $set: { eliminado: false }, $unset: { fecha_eliminado: 1 } }
+    );
+
+    return res.json({ success: true, message: "Recurso habilitado" });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/* ───────── DELETE /api/resources/:id/force ───────── */
+export async function forceDeleteResource(req, res, next) {
+  const id = +req.params.id;
+
+  // 1) Traemos el recurso completo (para sacar imagePath)
+  const recurso = await selectResourceById(id);
+  if (!recurso) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Recurso no encontrado" });
+  }
+
+  // 2) Traemos TODAS las versiones/archivos en Mongo
+  const docs = await FileModel.find({ id_recurso: id });
+
+  try {
+    /* 2-A)  Borramos **todos** los archivos asociados en Dropbox */
+    //    a)  portada
+    if (recurso.imagePath?.startsWith("/files/")) {
+      await safeDelete(recurso.imagePath);
+    }
+
+    //    b)  cada versión del archivo principal
+    await Promise.all(
+      docs.map((d) => safeDelete(d.dropbox_path).catch(() => {}))
+    );
+
+    /* 2-B)  Eliminamos bitácora en Mongo               */
+    await FileModel.deleteMany({ id_recurso: id });
+
+    /* 2-C)  Eliminamos fila en MySQL (hard-delete)     */
+    await hardDeleteResourceById(id);
+
+    logger.info(`Recurso #${id} eliminado definitivamente`);
+    res.json({ success: true, message: "Recurso eliminado definitivamente" });
+  } catch (err) {
+    logger.error(`forceDeleteResource FAILED ⇒ ${err.stack || err}`);
+    next(err);
   }
 }
