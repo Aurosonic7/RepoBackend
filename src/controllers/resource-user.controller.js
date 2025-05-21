@@ -3,6 +3,7 @@
 import logger from "../utils/errorHandler.js";
 import {
   insertResourceUser,
+  selectAllResourceUser,
   selectResourcesByUser,
   selectUsersByResource,
   selectAllResourcesByUser,
@@ -17,6 +18,16 @@ export async function createResourceUser(req, res, next) {
     res.status(201).json({ success: true, resourceUser: created });
   } catch (err) {
     logger.error(`Error en createResourceUser: ${err.stack || err}`);
+    next(err);
+  }
+}
+
+export async function getAllResourceUser(req, res, next) {
+  try {
+    const resourceUsers = await selectAllResourceUser();
+    res.json({ success: true, resourceUsers });
+  } catch (err) {
+    logger.error(`Error en getAllResourceUser: ${err.stack || err}`);
     next(err);
   }
 }

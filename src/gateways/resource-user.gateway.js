@@ -17,6 +17,16 @@ export async function insertResourceUser({ idUser, idResource }) {
   }
 }
 
+export async function selectAllResourceUser() {
+  const conn = await openConnection();
+  try {
+    const [rows] = await conn.query(`SELECT * FROM ResourceUser`);
+    return rows;
+  } finally {
+    closeConnection(conn);
+  }
+}
+
 export async function selectResourcesByUser(idUser) {
   const conn = await openConnection();
   try {

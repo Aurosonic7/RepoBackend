@@ -3,6 +3,7 @@ import { Router } from "express";
 import authenticateToken from "../middlewares/auth.js";
 import {
   createResourceUser,
+  getAllResourceUser,
   getResourcesByUser,
   getUsersByResource,
   deleteResourceUser,
@@ -13,10 +14,11 @@ import {
 const router = Router();
 
 router.post("/", authenticateToken, createResourceUser);
+router.get("/", getAllResourceUser);
 router.get("/user/:idUser", authenticateToken, getResourcesByUser);
-router.get("/resource/:idResource", authenticateToken, getUsersByResource);
-router.delete("/:idUser/:idResource", authenticateToken, deleteResourceUser);
-router.get("/user", authenticateToken, getAllResourcesByUser);
-router.get("/resource", authenticateToken, getAllUsersByResource);
+router.get("/resource/:idResource", getUsersByResource);
+router.delete("/:idUser/:idResource", deleteResourceUser);
+router.get("/user", getAllResourcesByUser);
+router.get("/resource", getAllUsersByResource);
 
 export default router;
