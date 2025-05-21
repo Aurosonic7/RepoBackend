@@ -115,13 +115,20 @@ export async function getResources(req, res, next) {
     if (req.query.includeFile === "true") {
       await Promise.all(
         list.map(async (r) => {
-          if (r.filePath?.startsWith("/files/"))
-            r.tempFileUrl = await getTempLink(r.filePath);
-          if (r.imagePath?.startsWith("/files/"))
-            r.tempImageUrl = await getTempLink(r.imagePath, true);
+          if (r.filePath?.startsWith("/files/")) {
+            // URL de descarga (dl=0)
+            r.downloadUrl = await getTempLink(r.filePath);
+            // URL de preview/embed (raw=1)
+            r.embedUrl = await getTempLink(r.filePath, true);
+          }
+          if (r.imagePath?.startsWith("/files/")) {
+            // portada siempre como imagen (raw=1)
+            r.imageUrl = await getTempLink(r.imagePath, true);
+          }
         })
       );
     }
+
     return res.json({ success: true, resources: list });
   } catch (err) {
     return next(err);
@@ -137,10 +144,13 @@ export async function getResourceById(req, res, next) {
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
     if (req.query.includeFile === "true") {
-      if (r.filePath?.startsWith("/files/"))
-        r.tempFileUrl = await getTempLink(r.filePath);
-      if (r.imagePath?.startsWith("/files/"))
-        r.tempImageUrl = await getTempLink(r.imagePath, true);
+      if (rec.filePath?.startsWith("/files/")) {
+        rec.downloadUrl = await getTempLink(rec.filePath);
+        rec.embedUrl = await getTempLink(rec.filePath, true);
+      }
+      if (rec.imagePath?.startsWith("/files/")) {
+        rec.imageUrl = await getTempLink(rec.imagePath, true);
+      }
     }
     return res.json({ success: true, resource: rec });
   } catch (err) {
