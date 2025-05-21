@@ -14,7 +14,7 @@ import {
 } from "../../config/databases/mysql.js";
 
 import FileModel from "../models/file.model.js";
-import { safeDelete } from "../utils/dropbox.js";
+import { getTempLink, safeDelete } from "../utils/dropbox.js";
 import logger from "../utils/errorHandler.js";
 
 /*────────────────────── POST /api/resources ──────────────────────*/
@@ -109,9 +109,19 @@ export async function createResource(req, res, next) {
   }
 }
 /* ─────────────── GET /api/resources ────────────────────────────── */
-export async function getResources(_req, res, next) {
+export async function getResources(req, res, next) {
   try {
     const list = await selectAllActiveResources();
+    if (req.query.includeFile === "true") {
+      await Promise.all(
+        list.map(async (r) => {
+          if (r.filePath?.startsWith("/files/"))
+            r.tempFileUrl = await getTempLink(r.filePath);
+          if (r.imagePath?.startsWith("/files/"))
+            r.tempImageUrl = await getTempLink(r.imagePath, true);
+        })
+      );
+    }
     return res.json({ success: true, resources: list });
   } catch (err) {
     return next(err);
@@ -126,7 +136,12 @@ export async function getResourceById(req, res, next) {
       return res
         .status(404)
         .json({ success: false, message: "Recurso no encontrado" });
-
+    if (req.query.includeFile === "true") {
+      if (r.filePath?.startsWith("/files/"))
+        r.tempFileUrl = await getTempLink(r.filePath);
+      if (r.imagePath?.startsWith("/files/"))
+        r.tempImageUrl = await getTempLink(r.imagePath, true);
+    }
     return res.json({ success: true, resource: rec });
   } catch (err) {
     logger.error(`getResourceById FAILED ⇒ ${err.stack || err}`);
