@@ -5,6 +5,8 @@ import {
   insertResourceUser,
   selectResourcesByUser,
   selectUsersByResource,
+  selectAllResourcesByUser,
+  selectAllUserByResource,
   deleteResourceUserByIds,
 } from "../gateways/resource-user.gateway.js";
 
@@ -30,6 +32,16 @@ export async function getResourcesByUser(req, res, next) {
   }
 }
 
+export async function getAllResourcesByUser(req, res, next) {
+  try {
+    const resources = await selectAllResourcesByUser();
+    res.json({ success: true, resources });
+  } catch (err) {
+    logger.error(`Error en getAllResourcesByUser: ${err.stack || err}`);
+    next(err);
+  }
+}
+
 export async function getUsersByResource(req, res, next) {
   try {
     const idResource = Number(req.params.idResource);
@@ -37,6 +49,16 @@ export async function getUsersByResource(req, res, next) {
     res.json({ success: true, users });
   } catch (err) {
     logger.error(`Error en getUsersByResource: ${err.stack || err}`);
+    next(err);
+  }
+}
+
+export async function getAllUsersByResource(req, res, next) {
+  try {
+    const users = await selectAllUserByResource();
+    res.json({ success: true, users });
+  } catch (err) {
+    logger.error(`Error en getAllUsersByResource: ${err.stack || err}`);
     next(err);
   }
 }
