@@ -22,22 +22,31 @@ export async function createResourceUser(req, res, next) {
   }
 }
 
-if (req.query.includeFile === "true") {
-  await Promise.all(
-    resourceUsers.map(async (r) => {
-      // si tiene archivo en Dropbox, creamos URL de descarga y de embed
-      if (r.filePath?.startsWith("/files/")) {
-        // dl=0
-        r.downloadUrl = await getTempLink(r.filePath);
-        // raw=1
-        r.embedUrl = await getTempLink(r.filePath, true);
-      }
-      // si tiene imagen de portada, siempre la mostramos como raw=1
-      if (r.imagePath?.startsWith("/files/")) {
-        r.imageUrl = await getTempLink(r.imagePath, true);
-      }
-    })
-  );
+export async function getAllResourceUser(req, res, next) {
+  try {
+    const resourceUsers = await selectAllResourceUser();
+    if (req.query.includeFile === "true") {
+      await Promise.all(
+        resourceUsers.map(async (r) => {
+          // si tiene archivo en Dropbox, creamos URL de descarga y de embed
+          if (r.filePath?.startsWith("/files/")) {
+            // dl=0
+            r.downloadUrl = await getTempLink(r.filePath);
+            // raw=1
+            r.embedUrl = await getTempLink(r.filePath, true);
+          }
+          // si tiene imagen de portada, siempre la mostramos como raw=1
+          if (r.imagePath?.startsWith("/files/")) {
+            r.imageUrl = await getTempLink(r.imagePath, true);
+          }
+        })
+      );
+    }
+    res.json({ success: true, resourceUsers });
+  } catch (err) {
+    logger.error(`Error en getAllResourceUser: ${err.stack || err}`);
+    next(err);
+  }
 }
 
 export async function getResourcesByUser(req, res, next) {
