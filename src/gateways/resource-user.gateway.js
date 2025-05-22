@@ -20,7 +20,16 @@ export async function insertResourceUser({ idUser, idResource }) {
 export async function selectAllResourceUser() {
   const conn = await openConnection();
   try {
-    const [rows] = await conn.query(`SELECT * FROM ResourceUser`);
+    const [rows] = await conn.query(`
+      SELECT
+        ru.idUser,
+        ru.idResource,
+        r.filePath,
+        r.imagePath
+      FROM ResourceUser AS ru
+      INNER JOIN Resource AS r
+        ON ru.idResource = r.idResource
+        `);
     return rows;
   } finally {
     closeConnection(conn);

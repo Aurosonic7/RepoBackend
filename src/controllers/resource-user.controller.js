@@ -27,18 +27,16 @@ export async function getAllResourceUser(req, res, next) {
     const resourceUsers = await selectAllResourceUser();
     if (req.query.includeFile === "true") {
       await Promise.all(
-        resourceUsers.map(async (r) => {
-          // si el recurso tiene un filePath en Dropbox
-          if (r.filePath?.startsWith("/files/")) {
-            // URL de descarga (dl=0)
-            r.downloadUrl = await getTempLink(r.filePath);
-            // URL de embed/preview (raw=1)
-            r.embedUrl = await getTempLink(r.filePath, true);
+        resourceUsers.map(async (rel) => {
+          // descarga normal (dl=0)
+          if (rel.filePath?.startsWith("/files/")) {
+            rel.downloadUrl = await getTempLink(rel.filePath);
+            // preview/embed (raw=1)
+            rel.embedUrl = await getTempLink(rel.filePath, true);
           }
-          // si tiene imagen de portada
-          if (r.imagePath?.startsWith("/files/")) {
-            // portada siempre en raw=1
-            r.imageUrl = await getTempLink(r.imagePath, true);
+          // portada
+          if (rel.imagePath?.startsWith("/files/")) {
+            rel.imageUrl = await getTempLink(rel.imagePath, true);
           }
         })
       );
