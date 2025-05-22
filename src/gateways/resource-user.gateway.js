@@ -29,7 +29,7 @@ export async function selectAllResourceUser() {
       FROM ResourceUser AS ru
       INNER JOIN Resource AS r
         ON ru.idResource = r.idResource
-        `);
+    `);
     return rows;
   } finally {
     closeConnection(conn);

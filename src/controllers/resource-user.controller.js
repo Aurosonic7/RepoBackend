@@ -25,23 +25,24 @@ export async function createResourceUser(req, res, next) {
 export async function getAllResourceUser(req, res, next) {
   try {
     const resourceUsers = await selectAllResourceUser();
+
     if (req.query.includeFile === "true") {
       await Promise.all(
         resourceUsers.map(async (rel) => {
-          // descarga normal (dl=0)
+          // PDF / archivo principal: downloadUrl (dl=0) + embedUrl (raw=1)
           if (rel.filePath?.startsWith("/files/")) {
-            rel.downloadUrl = await getTempLink(rel.filePath);
-            // preview/embed (raw=1)
+            rel.downloadUrl = await getTempLink(rel.filePath, false);
             rel.embedUrl = await getTempLink(rel.filePath, true);
           }
-          // portada
+          // imagen de portada: siempre raw=1
           if (rel.imagePath?.startsWith("/files/")) {
             rel.imageUrl = await getTempLink(rel.imagePath, true);
           }
         })
       );
     }
-    res.json({ success: true, resourceUsers });
+
+    return res.json({ success: true, resourceUsers });
   } catch (err) {
     logger.error(`Error en getAllResourceUser: ${err.stack || err}`);
     next(err);
