@@ -25,6 +25,16 @@ export async function createResourceUser(req, res, next) {
 export async function getAllResourceUser(req, res, next) {
   try {
     const resourceUsers = await selectAllResourceUser();
+    if (req.query.includeFile === "true") {
+      await Promise.all(
+        list.map(async (r) => {
+          if (r.filePath?.startsWith("/files/"))
+            r.tempFileUrl = await getTempLink(r.filePath);
+          if (r.imagePath?.startsWith("/files/"))
+            r.tempImageUrl = await getTempLink(r.imagePath, true);
+        })
+      );
+    }
     res.json({ success: true, resourceUsers });
   } catch (err) {
     logger.error(`Error en getAllResourceUser: ${err.stack || err}`);
