@@ -13,6 +13,7 @@ import { compressionMiddleware } from "./middlewares/compression.js";
 import { requestIdMiddleware } from "./middlewares/requestId.js";
 import { morganMiddleware } from "./middlewares/logger.js";
 import cookieParser from "cookie-parser";
+import filesPolicy from "./middlewares/filesPolicy.js";
 
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
@@ -38,6 +39,7 @@ app.use(requestIdMiddleware);
 app.use(morganMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(filesPolicy);
 
 //? ─── API Routes ─────────────────────────────────────────────────────────────────
 app.get("/api", (req, res) => res.json({ message: "Server is running..." }));
