@@ -14,7 +14,8 @@ import {
 } from "../../config/databases/mysql.js";
 
 import FileModel from "../models/file.model.js";
-import { getTempLink, safeDelete } from "../utils/dropbox.js";
+import { safeDelete } from "../utils/dropbox.js";
+import { safeTempLink } from "../utils/safeTempLink.js";
 import logger from "../utils/errorHandler.js";
 import { normalizeDropboxPath } from "../utils/normalizeDropboxPath.js";
 
@@ -117,14 +118,14 @@ export async function getResources(req, res, next) {
       await Promise.all(
         list.map(async (r) => {
           if (r.filePath?.startsWith("/files/")) {
-            // URL de descarga (dl=0)
-            r.downloadUrl = await getTempLink(r.filePath);
-            // URL de preview/embed (raw=1)
-            r.embedUrl = await getTempLink(r.filePath, true);
+            // enlace de descarga (dl=0) – devuelve null si falla
+            r.downloadUrl = await safeTempLink(r.filePath);
+            // enlace raw para <embed>/<img> (raw=1)
+            r.embedUrl = await safeTempLink(r.filePath, true);
           }
           if (r.imagePath?.startsWith("/files/")) {
-            // portada siempre como imagen (raw=1)
-            r.imageUrl = await getTempLink(r.imagePath, true);
+            // portada siempre raw; si falla quedamos con la ruta
+            r.imageUrl = (await safeTempLink(r.imagePath, true)) || r.imagePath;
           }
         })
       );
@@ -146,11 +147,12 @@ export async function getResourceById(req, res, next) {
         .json({ success: false, message: "Recurso no encontrado" });
     if (req.query.includeFile === "true") {
       if (rec.filePath?.startsWith("/files/")) {
-        rec.downloadUrl = await getTempLink(rec.filePath);
-        rec.embedUrl = await getTempLink(rec.filePath, true);
+        rec.downloadUrl = await safeTempLink(rec.filePath);
+        rec.embedUrl = await safeTempLink(rec.filePath, true);
       }
       if (rec.imagePath?.startsWith("/files/")) {
-        rec.imageUrl = await getTempLink(rec.imagePath, true);
+        rec.imageUrl =
+          (await safeTempLink(rec.imagePath, true)) || rec.imagePath;
       }
     }
     return res.json({ success: true, resource: rec });
