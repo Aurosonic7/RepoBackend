@@ -16,6 +16,7 @@ import {
 import FileModel from "../models/file.model.js";
 import { getTempLink, safeDelete } from "../utils/dropbox.js";
 import logger from "../utils/errorHandler.js";
+import { normalizeDropboxPath } from "../utils/normalizeDropboxPath.js";
 
 /*────────────────────── POST /api/resources ──────────────────────*/
 export async function createResource(req, res, next) {
@@ -68,8 +69,8 @@ export async function createResource(req, res, next) {
         title,
         description,
         datePublication,
-        filePath: original.dropbox.path,
-        imagePath: coverImage.dropbox.path,
+        filePath: normalizeDropboxPath(original.dropbox.path),
+        imagePath: normalizeDropboxPath(coverImage.dropbox.path),
         idStudent: +idStudent,
         idCategory: +idCategory,
       },
@@ -85,7 +86,7 @@ export async function createResource(req, res, next) {
         : original.mimetype.startsWith("image/")
         ? "imagen"
         : "video",
-      dropbox_path: original.dropbox.path,
+      dropbox_path: normalizeDropboxPath(original.dropbox.path),
       versiones: [
         {
           numero: 1,
@@ -285,17 +286,23 @@ export async function updateResource(req, res, next) {
   const mainFile = req.files?.file?.[0];
   const coverFile = req.files?.image?.[0];
 
-  if (mainFile?.dropbox) {
-    if (mainFile.dropbox.path !== current.filePath) {
-      // es realmente un archivo distinto
-      newMainFilePath = mainFile.dropbox.path;
-      fields.filePath = newMainFilePath;
+  const mainPathNorm = mainFile?.dropbox
+    ? normalizeDropboxPath(mainFile.dropbox.path)
+    : null;
+  const coverPathNorm = coverFile?.dropbox
+    ? normalizeDropboxPath(coverFile.dropbox.path)
+    : null;
+
+  if (mainPathNorm) {
+    if (mainPathNorm !== current.filePath) {
+      newMainFilePath = mainPathNorm;
+      fields.filePath = mainPathNorm;
     }
   }
-  if (coverFile?.dropbox) {
-    if (coverFile.dropbox.path !== current.imagePath) {
-      newCoverImagePath = coverFile.dropbox.path;
-      fields.imagePath = newCoverImagePath;
+  if (coverPathNorm) {
+    if (coverPathNorm !== current.imagePath) {
+      newCoverImagePath = coverPathNorm;
+      fields.imagePath = coverPathNorm;
     }
   }
 
