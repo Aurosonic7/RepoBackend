@@ -1,4 +1,5 @@
 import express from "express";
+import path from "node:path";
 
 import config from "../config/config.js";
 import { openConnection, closeConnection } from "../config/databases/mysql.js";
@@ -40,6 +41,11 @@ app.use(morganMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(filesPolicy);
+app.use(
+  "/api/files",
+  filesPolicy,
+  express.static(path.join(process.cwd(), "files"))
+);
 
 //? ─── API Routes ─────────────────────────────────────────────────────────────────
 app.get("/api", (req, res) => res.json({ message: "Server is running..." }));
