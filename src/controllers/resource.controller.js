@@ -341,6 +341,20 @@ export async function updateResource(req, res, next) {
 
     await conn.commit();
 
+    // ── Añadimos URLs temporales para que el frontend no reciba "undefined" ──
+    try {
+      if (updated.filePath?.startsWith("/files/")) {
+        updated.downloadUrl = await safeTempLink(updated.filePath);
+        updated.embedUrl = await safeTempLink(updated.filePath, true);
+      }
+      if (updated.imagePath?.startsWith("/files/")) {
+        updated.imageUrl =
+          (await safeTempLink(updated.imagePath, true)) || updated.imagePath;
+      }
+    } catch {
+      /* Si Dropbox falla, seguimos sin interrumpir la respuesta */
+    }
+
     /* (B) después de commit borramos en Dropbox los antiguos (ya no se usan) */
     if (newMainFilePath) await safeDelete(current.filePath);
     if (newCoverImagePath) await safeDelete(current.imagePath);
