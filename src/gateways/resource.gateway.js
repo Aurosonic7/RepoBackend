@@ -104,7 +104,7 @@ export async function selectResourceById(id) {
   const conn = await openConnection();
   try {
     const [rows] = await conn.query(
-      `SELECT * FROM Resource WHERE idResource = ? AND isActive = 1`,
+      `SELECT * FROM Resource WHERE idResource = ?`,
       [id]
     );
     return rows[0] ?? null;
