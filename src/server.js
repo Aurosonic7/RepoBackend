@@ -40,12 +40,7 @@ app.use(requestIdMiddleware);
 app.use(morganMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(filesPolicy);
-app.use(
-  "/api/files",
-  filesPolicy,
-  express.static(path.join(process.cwd(), "files"))
-);
+filesPolicy(app);
 
 //? ─── API Routes ─────────────────────────────────────────────────────────────────
 app.get("/api", (req, res) => res.json({ message: "Server is running..." }));
