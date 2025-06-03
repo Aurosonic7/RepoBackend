@@ -13,8 +13,8 @@ import {
 /* create ---------------------------------------------------- */
 export async function createStudent(req, res, next) {
   try {
-    const { name, idCareer } = req.body;
-    const s = await insertStudent({ name, idCareer });
+    const { idStudent, name, idCareer } = req.body;
+    const s = await insertStudent({ idStudent, name, idCareer });
     res.status(201).json({ success: true, student: s });
   } catch (e) {
     logger.error(e);

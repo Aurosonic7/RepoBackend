@@ -10,20 +10,33 @@ async function baseQuery(conn, sql, params = []) {
 }
 
 /* ───── CRUD ───── */
-export async function insertStudent({ name, idCareer }) {
+export async function insertStudent({ idStudent, name, idCareer }) {
   const conn = await openConnection();
   try {
+    const cols = [],
+      vals = [],
+      params = [];
+    if (idStudent !== undefined && idStudent !== null) {
+      cols.push("idStudent");
+      vals.push("?");
+      params.push(idStudent);
+    }
+    cols.push("name", "idCareer");
+    vals.push("?", "?");
+    params.push(name, idCareer);
+
     const [res] = await conn.query(
-      `INSERT INTO Student (name, idCareer) VALUES (?, ?)`,
-      [name, idCareer]
+      `INSERT INTO Student (${cols.join(", ")}) VALUES (${vals.join(", ")})`,
+      params
     );
+    const newId = idStudent ?? res.insertId;
     return (
       (
         await baseQuery(
           conn,
           `SELECT idStudent, name, isActive, idCareer
-            FROM Student WHERE idStudent = ?`,
-          [res.insertId]
+              FROM Student WHERE idStudent = ?`,
+          [newId]
         )
       )[0] ?? null
     );
