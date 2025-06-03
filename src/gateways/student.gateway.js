@@ -63,7 +63,7 @@ export async function selectStudentById(id) {
   }
 }
 
-export async function updateStudentById(id, { name, idCareer }) {
+export async function updateStudentById(id, { name, idCareer, isActive }) {
   const conn = await openConnection();
   try {
     const fields = [];
