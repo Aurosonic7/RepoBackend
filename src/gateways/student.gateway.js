@@ -53,7 +53,7 @@ export async function selectStudentById(id) {
         await baseQuery(
           conn,
           `SELECT idStudent, name, isActive, idCareer
-            FROM Student WHERE idStudent = ? AND isActive = 1`,
+            FROM Student WHERE idStudent = ?`,
           [id]
         )
       )[0] ?? null
