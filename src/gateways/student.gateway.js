@@ -76,13 +76,15 @@ export async function updateStudentById(id, { name, idCareer }) {
       fields.push("idCareer = ?");
       params.push(idCareer);
     }
+    if (isActive !== undefined) {
+      fields.push("isActive = ?");
+      params.push(isActive ? 1 : 0);
+    }
     if (!fields.length) return await selectStudentById(id);
 
     params.push(id);
     const [r] = await conn.query(
-      `UPDATE Student SET ${fields.join(
-        ", "
-      )} WHERE idStudent = ? AND isActive = 1`,
+      `UPDATE Student SET ${fields.join(", ")} WHERE idStudent = ?`,
       params
     );
     if (r.affectedRows === 0) return null;
